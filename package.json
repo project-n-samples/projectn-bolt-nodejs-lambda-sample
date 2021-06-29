@@ -15,7 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.18.0",
-    "projectn-bolt-aws-typescript-sdk": "^1.0.0-alpha.2"
+    "projectn-bolt-aws-typescript-sdk": "^1.0.0-alpha.3"
   },
   "devDependencies": {
     "@types/node": "^15.12.4",

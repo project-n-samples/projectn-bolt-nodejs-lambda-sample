@@ -1500,10 +1500,10 @@ prepend-http@^2.0.0:
   resolved "https://registry.yarnpkg.com/prepend-http/-/prepend-http-2.0.0.tgz#e92434bfa5ea8c19f41cdfd401d741a3c819d897"
   integrity sha1-6SQ0v6XqjBn0HN/UAddBo8gZ2Jc=
 
-projectn-bolt-aws-typescript-sdk@^1.0.0-alpha.2:
-  version "1.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/projectn-bolt-aws-typescript-sdk/-/projectn-bolt-aws-typescript-sdk-1.0.0-alpha.2.tgz#74474d6b451b6cca0eed3dfacdda6af032859f4b"
-  integrity sha512-E6DTyVEYLjK5BK6o1a2Jg1tW2cnH2VPgVRa6BnChhdCJZ+Ld6WtXWYgB8HXXCxK8+NZHWFtiTS+fqxxGNSV15w==
+projectn-bolt-aws-typescript-sdk@^1.0.0-alpha.3:
+  version "1.0.0-alpha.3"
+  resolved "https://registry.yarnpkg.com/projectn-bolt-aws-typescript-sdk/-/projectn-bolt-aws-typescript-sdk-1.0.0-alpha.3.tgz#d5860389e7bfae97ddc372a014f5913c115b7916"
+  integrity sha512-N/3BIsV2BSXbsZM9h9/alVHU4plB3NnEffxd0UdARw1KwHSj5ug6S9pdy19lSkj2fRA9FG/gNAU3NivLMXu1OQ==
   dependencies:
     "@aws-sdk/client-s3" "^3.18.0"
     axios "^0.21.1"
