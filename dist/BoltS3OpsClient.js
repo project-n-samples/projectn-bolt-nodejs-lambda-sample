@@ -64,7 +64,7 @@ class BoltS3OpsClient {
                     return this.listBuckets(client);
                 }
                 else if (event.requestType === RequestTypes.HeadBucket) {
-                    return this.headBucket(client, event.bucket);
+                    return this.headBucketAlongWithRegion(client, event.bucket);
                 }
                 else if (event.requestType === RequestTypes.PutObject) {
                     return this.putObject(client, event.bucket, event.key, event.value);
@@ -173,22 +173,16 @@ class BoltS3OpsClient {
      * Checks if the bucket exists in Bolt/S3.
      * @param client
      * @param bucket
-     * @returns status code if the bucket exists
+     * @returns status code and region if the bucket exists
      */
-    headBucket(client, bucket) {
+    headBucketAlongWithRegion(client, bucket) {
         return __awaiter(this, void 0, void 0, function* () {
-            const command = new client_s3_2.HeadBucketCommand({ Bucket: bucket });
+            const command = new client_s3_2.GetBucketLocationCommand({ Bucket: bucket });
             const response = yield client.send(command);
             const statusCode = response.$metadata && response.$metadata.httpStatusCode;
             return {
                 statusCode: statusCode,
-                // region: headers["x-amz-bucket-region"],
-                /** Note:
-                 * As of now HeadBucketCommandOutput metadata prop not fetching region information
-                 * For more info, check these below links
-                 * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/classes/headbucketcommand.html
-                 * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/interfaces/headbucketcommandoutput.html
-                 * */
+                region: response.LocationConstraint
             };
             return response;
         });

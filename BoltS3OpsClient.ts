@@ -8,7 +8,7 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   ListBucketsCommand,
-  HeadBucketCommand,
+  GetBucketLocationCommand,
   PutObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
@@ -72,7 +72,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
       } else if (event.requestType === RequestTypes.ListBuckets) {
         return this.listBuckets(client);
       } else if (event.requestType === RequestTypes.HeadBucket) {
-        return this.headBucket(client, event.bucket);
+        return this.headBucketAlongWithRegion(client, event.bucket);
       } else if (event.requestType === RequestTypes.PutObject) {
         return this.putObject(client, event.bucket, event.key, event.value);
       } else if (event.requestType === RequestTypes.DeleteObject) {
@@ -173,21 +173,15 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * Checks if the bucket exists in Bolt/S3.
    * @param client
    * @param bucket
-   * @returns status code if the bucket exists
+   * @returns status code and region if the bucket exists
    */
-  async headBucket(client: S3Client, bucket: string) {
-    const command = new HeadBucketCommand({ Bucket: bucket });
+  async headBucketAlongWithRegion(client: S3Client, bucket: string) {
+    const command = new GetBucketLocationCommand({ Bucket: bucket });
     const response = await client.send(command);
     const statusCode = response.$metadata && response.$metadata.httpStatusCode;
     return {
       statusCode: statusCode,
-      // region: headers["x-amz-bucket-region"],
-      /** Note:
-       * As of now HeadBucketCommandOutput metadata prop not fetching region information
-       * For more info, check these below links
-       * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/classes/headbucketcommand.html
-       * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/interfaces/headbucketcommandoutput.html
-       * */
+      region: response.LocationConstraint
     };
     return response;
   }
