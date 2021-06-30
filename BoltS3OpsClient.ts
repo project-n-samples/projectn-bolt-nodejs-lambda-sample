@@ -1,6 +1,7 @@
 import { BoltS3Client } from "projectn-bolt-aws-typescript-sdk";
 import { S3Client } from "@aws-sdk/client-s3";
 const { createHmac, createHash } = require("crypto");
+const zlib = require("zlib");
 
 import {
   ListObjectsV2Command,
@@ -11,7 +12,6 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
-
 
 type LambdaEventType = {
   sdkType: string;
@@ -49,11 +49,11 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
 
   async processEvent(event: LambdaEventType) {
     Object.keys(event).forEach((prop) => {
-      if(['sdkType', 'requestType'].includes(prop)) {
+      if (["sdkType", "requestType"].includes(prop)) {
         event[prop] = event[prop].toUpperCase();
       }
     });
-    console.log({event}); // TODO: (MP) Delete for later
+    console.log({ event }); // TODO: (MP) Delete for later
     /**
      * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
      * create an Bolt/S3 Client depending on the 'sdkType'
@@ -74,12 +74,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
       } else if (event.requestType === RequestTypes.HeadBucket) {
         return this.headBucket(client, event.bucket);
       } else if (event.requestType === RequestTypes.PutObject) {
-        return this.putObject(
-          client,
-          event.bucket,
-          event.key,
-          event.value
-        );
+        return this.putObject(client, event.bucket, event.key, event.value);
       } else if (event.requestType === RequestTypes.DeleteObject) {
         return this.deleteObject(client, event.bucket, event.key);
       }
@@ -102,6 +97,23 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     return { objects: objects };
   }
 
+  async streamToString(stream) {
+    return new Promise((resolve, reject) => {
+      const chunks = [];
+      stream.on("data", (chunk) => chunks.push(chunk));
+      stream.on("error", reject);
+      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    });
+  }
+
+  async dezipped(stream) {
+    return new Promise((resolve, reject) => {
+      zlib.gunzip(stream, function (err, dezipped) {
+        resolve(dezipped.toString());
+      });
+    });
+  }
+
   /**
    * Gets the object from Bolt/S3, computes and returns the object's MD5 hash
      If the object is gzip encoded, object is decompressed before computing its MD5.
@@ -113,18 +125,14 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
   async getObject(client: S3Client, bucket: string, key: string) {
     const command = new GetObjectCommand({ Bucket: bucket, Key: key });
     const response = await client.send(command);
+    const body = response["Body"];
     // If Object is gzip encoded, compute MD5 on the decompressed object.
-    let md5 = "";
-    // TODO: (MP)
-    // if (response["ContentEncoding"] == "gzip" || key.endsWith(".gz")) {
-    //   md5 = hashlib
-    //     .md5(gzip.decompress(response["Body"].read()))
-    //     .hexdigest()
-    //     .upper();
-    // } else {
-    //   md5 = hashlib.md5(resp["Body"].read()).hexdigest().upper();
-    // }
-    return { md5: md5 };
+    const data =
+      response["ContentEncoding"] == "gzip" || key.endsWith(".gz")
+        ? await this.dezipped(body)
+        : await this.streamToString(body);
+    const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
+    return { md5 };
   }
 
   /**

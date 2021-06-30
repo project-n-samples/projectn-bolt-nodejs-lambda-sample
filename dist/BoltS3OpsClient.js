@@ -13,6 +13,7 @@ exports.BoltS3OpsClient = exports.RequestTypes = exports.SdkTypes = void 0;
 const projectn_bolt_aws_typescript_sdk_1 = require("projectn-bolt-aws-typescript-sdk");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const { createHmac, createHash } = require("crypto");
+const zlib = require("zlib");
 const client_s3_2 = require("@aws-sdk/client-s3");
 var SdkTypes;
 (function (SdkTypes) {
@@ -38,7 +39,7 @@ class BoltS3OpsClient {
     processEvent(event) {
         return __awaiter(this, void 0, void 0, function* () {
             Object.keys(event).forEach((prop) => {
-                if (['sdkType', 'requestType'].includes(prop)) {
+                if (["sdkType", "requestType"].includes(prop)) {
                     event[prop] = event[prop].toUpperCase();
                 }
             });
@@ -92,6 +93,25 @@ class BoltS3OpsClient {
             return { objects: objects };
         });
     }
+    streamToString(stream) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                const chunks = [];
+                stream.on("data", (chunk) => chunks.push(chunk));
+                stream.on("error", reject);
+                stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+            });
+        });
+    }
+    dezipped(stream) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                zlib.gunzip(stream, function (err, dezipped) {
+                    resolve(dezipped.toString());
+                });
+            });
+        });
+    }
     /**
      * Gets the object from Bolt/S3, computes and returns the object's MD5 hash
        If the object is gzip encoded, object is decompressed before computing its MD5.
@@ -104,18 +124,13 @@ class BoltS3OpsClient {
         return __awaiter(this, void 0, void 0, function* () {
             const command = new client_s3_2.GetObjectCommand({ Bucket: bucket, Key: key });
             const response = yield client.send(command);
+            const body = response["Body"];
             // If Object is gzip encoded, compute MD5 on the decompressed object.
-            let md5 = "";
-            // TODO: (MP)
-            // if (response["ContentEncoding"] == "gzip" || key.endsWith(".gz")) {
-            //   md5 = hashlib
-            //     .md5(gzip.decompress(response["Body"].read()))
-            //     .hexdigest()
-            //     .upper();
-            // } else {
-            //   md5 = hashlib.md5(resp["Body"].read()).hexdigest().upper();
-            // }
-            return { md5: md5 };
+            const data = response["ContentEncoding"] == "gzip" || key.endsWith(".gz")
+                ? yield this.dezipped(body)
+                : yield this.streamToString(body);
+            const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
+            return { md5 };
         });
     }
     /**

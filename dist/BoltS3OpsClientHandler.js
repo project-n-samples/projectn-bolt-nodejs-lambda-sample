@@ -63,11 +63,12 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         });
     }))();
 });
-// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co"
-// process.env.AWS_REGION = "us-east-1"
-// exports.lambdaHandler({
-//     "requestType": "list_objects_v2",
-//     "sdkType": "Bolt",
-//     "bucket": "sr-ue2-uat"
-//   }, {}, console.log)
+process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+process.env.AWS_REGION = "us-east-1";
+exports.lambdaHandler({
+    "requestType": "get_object",
+    "sdkType": "s3",
+    "bucket": "mp-test-bucket-2",
+    "key": "BoltS3OpsClient.ts"
+}, {}, console.log);
 //# sourceMappingURL=BoltS3OpsClientHandler.js.map
