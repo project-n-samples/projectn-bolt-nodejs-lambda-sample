@@ -59,7 +59,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
      * create an Bolt/S3 Client depending on the 'sdkType'
      */
     const client =
-      event.sdkType === SdkTypes.Bolt ? new BoltS3Client({}) : new S3Client({});
+      event.sdkType === SdkTypes.Bolt ? new BoltS3Client({forcePathStyle: true}) : new S3Client({});
 
     try {
       //Performs an S3 / Bolt operation based on the input 'requestType'
