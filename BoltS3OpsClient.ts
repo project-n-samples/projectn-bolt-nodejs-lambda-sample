@@ -229,9 +229,9 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
   async deleteObject(client: S3Client, bucket: string, key: string) {
     const command = new DeleteObjectCommand({ Bucket: bucket, Key: key });
     const response = await client.send(command);
-    const statusCode = response["ResponseMetadata"]["HTTPStatusCode"];
+    const statusCode = response.$metadata && response.$metadata.httpStatusCode;
     return {
-      statusCode: statusCode,
+      statusCode: statusCode
     };
   }
 }

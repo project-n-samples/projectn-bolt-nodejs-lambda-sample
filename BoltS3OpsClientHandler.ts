@@ -47,19 +47,24 @@ exports.lambdaHandler = async (event, context, callback) => {
   await (async () => {
     const opsClient = new BoltS3OpsClient();
     const response = await opsClient.processEvent(event);
-  
+
     return new Promise((res, rej) => {
-        callback(undefined,{response});
-        res('success');
+      callback(undefined, { response });
+      res("success");
     });
   })();
 };
 
-// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co"
-// process.env.AWS_REGION = "us-east-1"
-// exports.lambdaHandler({
-//     "requestType": "get_object",
-//     "sdkType": "s3",
-//     "bucket": "mp-test-bucket-2",
-//     "key": "BoltS3OpsClient.ts"
-//   }, {}, console.log)
+process.env.BOLT_URL =
+  "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+process.env.AWS_REGION = "us-east-1";
+exports.lambdaHandler(
+  {
+    requestType: "delete_object",
+    sdkType: "s3",
+    bucket: "mp-test-bucket-2",
+    key: "package.json",
+  },
+  {},
+  console.log
+);

@@ -227,9 +227,9 @@ class BoltS3OpsClient {
         return __awaiter(this, void 0, void 0, function* () {
             const command = new client_s3_2.DeleteObjectCommand({ Bucket: bucket, Key: key });
             const response = yield client.send(command);
-            const statusCode = response["ResponseMetadata"]["HTTPStatusCode"];
+            const statusCode = response.$metadata && response.$metadata.httpStatusCode;
             return {
-                statusCode: statusCode,
+                statusCode: statusCode
             };
         });
     }
