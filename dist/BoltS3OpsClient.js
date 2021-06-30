@@ -47,7 +47,7 @@ class BoltS3OpsClient {
              * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
              * create an Bolt/S3 Client depending on the 'sdkType'
              */
-            const client = event.sdkType === SdkTypes.Bolt ? new projectn_bolt_aws_typescript_sdk_1.BoltS3Client({ forcePathStyle: true }) : new client_s3_1.S3Client({});
+            const client = event.sdkType === SdkTypes.Bolt ? new projectn_bolt_aws_typescript_sdk_1.BoltS3Client({}) : new client_s3_1.S3Client({});
             try {
                 //Performs an S3 / Bolt operation based on the input 'requestType'
                 if (event.requestType === RequestTypes.ListObjectsV2) {

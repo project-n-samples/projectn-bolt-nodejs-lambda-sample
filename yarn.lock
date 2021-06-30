@@ -1554,10 +1554,10 @@ prepend-http@^2.0.0:
   resolved "https://registry.yarnpkg.com/prepend-http/-/prepend-http-2.0.0.tgz#e92434bfa5ea8c19f41cdfd401d741a3c819d897"
   integrity sha1-6SQ0v6XqjBn0HN/UAddBo8gZ2Jc=
 
-projectn-bolt-aws-typescript-sdk@^1.0.0-alpha.6:
-  version "1.0.0-alpha.6"
-  resolved "https://registry.yarnpkg.com/projectn-bolt-aws-typescript-sdk/-/projectn-bolt-aws-typescript-sdk-1.0.0-alpha.6.tgz#37ae11162c39180f50261068cb7d0b4d794843e3"
-  integrity sha512-roVpjgFWaYvN/Ha6zieLUui/0QMkefDRP0hY2KTOZ92t0qq79sTghLZguKiHinLNbShFediFPK5iqNUnatqtJA==
+projectn-bolt-aws-typescript-sdk@^1.0.0-alpha.7:
+  version "1.0.0-alpha.7"
+  resolved "https://registry.yarnpkg.com/projectn-bolt-aws-typescript-sdk/-/projectn-bolt-aws-typescript-sdk-1.0.0-alpha.7.tgz#e23a54967f181875ea4dd1dfe7904558679ad110"
+  integrity sha512-qQOfp5j5ZjUoPTrQS/QcU9Wuds4B29IO3CVC5QozMlfjzJPrs7Bep7HBg7Bl14rAOhM2jKQOee9ZBUWz2awgcw==
   dependencies:
     "@aws-sdk/client-s3" "^3.18.0"
     aws-sdk "^2.936.0"

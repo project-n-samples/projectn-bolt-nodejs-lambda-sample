@@ -1,6 +1,6 @@
 {
   "name": "projectn-bolt-typescript-lambda-sample",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Sample AWS Lambda app in Node.js that utilizes Bolt TypeScript Client SDK",
   "main": "app.js",
   "files": [
@@ -15,7 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.18.0",
-    "projectn-bolt-aws-typescript-sdk": "^1.0.0-alpha.6"
+    "projectn-bolt-aws-typescript-sdk": "^1.0.0-alpha.7"
   },
   "devDependencies": {
     "@types/node": "^15.12.4",
