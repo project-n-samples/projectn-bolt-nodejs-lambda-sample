@@ -12,9 +12,6 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 
-process.env.BOLT_URL =
-  "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-process.env.AWS_REGION = "us-east-1";
 
 type LambdaEventType = {
   sdkType: string;
@@ -51,10 +48,12 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
   constructor() {}
 
   async processEvent(event: LambdaEventType) {
-    Object.keys(event).forEach((x) => {
-      event[x] = event[x].toUpperCase();
+    Object.keys(event).forEach((prop) => {
+      if(['sdkType', 'requestType'].includes(prop)) {
+        event[prop] = event[prop].toUpperCase();
+      }
     });
-
+    console.log({event}); // TODO: (MP) Delete for later
     /**
      * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
      * create an Bolt/S3 Client depending on the 'sdkType'

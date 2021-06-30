@@ -63,4 +63,9 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         });
     }))();
 });
+// exports.lambdaHandler({
+//     "requestType": "list_objects_v2",
+//     "sdkType": "BOLT",
+//     "bucket": "sr-ue2-uat"
+// }, {}, console.log)
 //# sourceMappingURL=BoltS3OpsClientHandler.js.map

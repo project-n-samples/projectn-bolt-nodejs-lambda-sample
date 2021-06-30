@@ -54,3 +54,9 @@ exports.lambdaHandler = async (event, context, callback) => {
     });
   })();
 };
+
+// exports.lambdaHandler({
+//     "requestType": "list_objects_v2",
+//     "sdkType": "BOLT",
+//     "bucket": "sr-ue2-uat"
+// }, {}, console.log)

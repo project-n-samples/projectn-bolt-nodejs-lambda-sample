@@ -14,9 +14,6 @@ const projectn_bolt_aws_typescript_sdk_1 = require("projectn-bolt-aws-typescript
 const client_s3_1 = require("@aws-sdk/client-s3");
 const { createHmac, createHash } = require("crypto");
 const client_s3_2 = require("@aws-sdk/client-s3");
-process.env.BOLT_URL =
-    "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-process.env.AWS_REGION = "us-east-1";
 var SdkTypes;
 (function (SdkTypes) {
     SdkTypes["Bolt"] = "BOLT";
@@ -40,9 +37,12 @@ class BoltS3OpsClient {
     constructor() { }
     processEvent(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            Object.keys(event).forEach((x) => {
-                event[x] = event[x].toUpperCase();
+            Object.keys(event).forEach((prop) => {
+                if (['sdkType', 'requestType'].includes(prop)) {
+                    event[prop] = event[prop].toUpperCase();
+                }
             });
+            console.log({ event }); // TODO: (MP) Delete for later
             /**
              * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
              * create an Bolt/S3 Client depending on the 'sdkType'
