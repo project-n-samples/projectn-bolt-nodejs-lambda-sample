@@ -65,24 +65,24 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     try {
       //Performs an S3 / Bolt operation based on the input 'requestType'
       if (event.requestType === RequestTypes.ListObjectsV2) {
-        return await this.listObjectsV2(client, event.bucket);
+        return this.listObjectsV2(client, event.bucket);
       } else if (event.requestType === RequestTypes.GetObject) {
-        return await this.getObject(client, event.bucket, event.key);
+        return this.getObject(client, event.bucket, event.key);
       } else if (event.requestType === RequestTypes.HeadObject) {
-        return await this.headObject(client, event.bucket, event.key);
+        return this.headObject(client, event.bucket, event.key);
       } else if (event.requestType === RequestTypes.ListBuckets) {
-        return await this.listBuckets(client);
+        return this.listBuckets(client);
       } else if (event.requestType === RequestTypes.HeadBucket) {
-        return await this.headBucket(client, event.bucket);
+        return this.headBucket(client, event.bucket);
       } else if (event.requestType === RequestTypes.PutObject) {
-        return await this.putObject(
+        return this.putObject(
           client,
           event.bucket,
           event.key,
           event.value
         );
       } else if (event.requestType === RequestTypes.DeleteObject) {
-        return await this.deleteObject(client, event.bucket, event.key);
+        return this.deleteObject(client, event.bucket, event.key);
       }
     } catch (ex) {
       console.error(ex);

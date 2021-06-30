@@ -51,25 +51,25 @@ class BoltS3OpsClient {
             try {
                 //Performs an S3 / Bolt operation based on the input 'requestType'
                 if (event.requestType === RequestTypes.ListObjectsV2) {
-                    return yield this.listObjectsV2(client, event.bucket);
+                    return this.listObjectsV2(client, event.bucket);
                 }
                 else if (event.requestType === RequestTypes.GetObject) {
-                    return yield this.getObject(client, event.bucket, event.key);
+                    return this.getObject(client, event.bucket, event.key);
                 }
                 else if (event.requestType === RequestTypes.HeadObject) {
-                    return yield this.headObject(client, event.bucket, event.key);
+                    return this.headObject(client, event.bucket, event.key);
                 }
                 else if (event.requestType === RequestTypes.ListBuckets) {
-                    return yield this.listBuckets(client);
+                    return this.listBuckets(client);
                 }
                 else if (event.requestType === RequestTypes.HeadBucket) {
-                    return yield this.headBucket(client, event.bucket);
+                    return this.headBucket(client, event.bucket);
                 }
                 else if (event.requestType === RequestTypes.PutObject) {
-                    return yield this.putObject(client, event.bucket, event.key, event.value);
+                    return this.putObject(client, event.bucket, event.key, event.value);
                 }
                 else if (event.requestType === RequestTypes.DeleteObject) {
-                    return yield this.deleteObject(client, event.bucket, event.key);
+                    return this.deleteObject(client, event.bucket, event.key);
                 }
             }
             catch (ex) {

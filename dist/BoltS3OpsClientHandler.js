@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const BoltS3OpsClient_1 = require("./BoltS3OpsClient");
-exports.lambdaHandler = (event) => __awaiter(void 0, void 0, void 0, function* () {
+exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
     /**
      *lambda_handler is the handler function that is invoked by AWS Lambda to process an incoming event.
   
@@ -54,8 +54,13 @@ exports.lambdaHandler = (event) => __awaiter(void 0, void 0, void 0, function* (
       g) Delete object from Bolt:
           {"requestType": "delete_object", "sdkType": "BOLT", "bucket": "<bucket>", "key": "<key>"}
      */
-    const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
-    const response = yield opsClient.processEvent(event);
-    return response;
+    yield (() => __awaiter(void 0, void 0, void 0, function* () {
+        const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
+        const response = yield opsClient.processEvent(event);
+        return new Promise((res, rej) => {
+            callback(undefined, { response });
+            res('success');
+        });
+    }))();
 });
 //# sourceMappingURL=BoltS3OpsClientHandler.js.map

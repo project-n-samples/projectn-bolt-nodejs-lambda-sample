@@ -1,6 +1,6 @@
 import { BoltS3OpsClient, SdkTypes, RequestTypes } from "./BoltS3OpsClient";
 
-exports.lambdaHandler = async (event) => {
+exports.lambdaHandler = async (event, context, callback) => {
   /**
    *lambda_handler is the handler function that is invoked by AWS Lambda to process an incoming event.
 
@@ -44,7 +44,13 @@ exports.lambdaHandler = async (event) => {
     g) Delete object from Bolt:
         {"requestType": "delete_object", "sdkType": "BOLT", "bucket": "<bucket>", "key": "<key>"}
    */
-  const opsClient = new BoltS3OpsClient();
-  const response = await opsClient.processEvent(event);
-  return response;
+  await (async () => {
+    const opsClient = new BoltS3OpsClient();
+    const response = await opsClient.processEvent(event);
+  
+    return new Promise((res, rej) => {
+        callback(undefined,{response});
+        res('success');
+    });
+  })();
 };
