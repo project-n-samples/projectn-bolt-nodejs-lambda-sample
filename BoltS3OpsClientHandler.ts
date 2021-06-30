@@ -55,8 +55,10 @@ exports.lambdaHandler = async (event, context, callback) => {
   })();
 };
 
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co"
+// process.env.AWS_REGION = "us-east-1"
 // exports.lambdaHandler({
-//     "requestType": "list_objects_v2",
-//     "sdkType": "BOLT",
-//     "bucket": "sr-ue2-uat"
-// }, {}, console.log)
+//     "requestType": "head_bucket",
+//     "sdkType": "s3",
+//     "bucket": "mp-test-bucket-2"
+//   }, {}, console.log)
