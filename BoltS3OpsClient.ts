@@ -183,7 +183,6 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
       statusCode: statusCode,
       region: response.LocationConstraint
     };
-    return response;
   }
 
   /**

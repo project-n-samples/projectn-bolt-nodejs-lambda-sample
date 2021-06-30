@@ -184,7 +184,6 @@ class BoltS3OpsClient {
                 statusCode: statusCode,
                 region: response.LocationConstraint
             };
-            return response;
         });
     }
     /**
