@@ -7,7 +7,7 @@
     "dist/"
   ],
   "scripts": {
-    "compile": "tsc && node dist/BoltAutoHealHandler.js",
+    "compile": "tsc && node dist/BoltS3PerfHandler.js",
     "dev": "./node_modules/nodemon/bin/nodemon.js -e ts  --exec \"npm run compile\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

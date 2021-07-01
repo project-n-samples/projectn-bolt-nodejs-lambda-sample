@@ -29,6 +29,7 @@ var RequestTypes;
     RequestTypes["HeadBucket"] = "HEAD_BUCKET";
     RequestTypes["PutObject"] = "PUT_OBJECT";
     RequestTypes["DeleteObject"] = "DELETE_OBJECT";
+    RequestTypes["All"] = "ALL";
 })(RequestTypes = exports.RequestTypes || (exports.RequestTypes = {}));
 /**
  * processEvent extracts the parameters (sdkType, requestType, bucket/key) from the event,
@@ -89,8 +90,8 @@ class BoltS3OpsClient {
         return __awaiter(this, void 0, void 0, function* () {
             const command = new client_s3_2.ListObjectsV2Command({ Bucket: bucket });
             const response = yield client.send(command);
-            const objects = (response["Contents"] || []).map((x) => x.Key);
-            return { objects: objects };
+            const keys = (response["Contents"] || []).map((x) => x.Key);
+            return { objects: keys };
         });
     }
     streamToString(stream) {
@@ -130,7 +131,7 @@ class BoltS3OpsClient {
                 ? yield this.dezipped(body)
                 : yield this.streamToString(body);
             const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
-            return { md5 };
+            return { md5, contentLength: response["ContentLength"] };
         });
     }
     /**
@@ -182,7 +183,7 @@ class BoltS3OpsClient {
             const statusCode = response.$metadata && response.$metadata.httpStatusCode;
             return {
                 statusCode: statusCode,
-                region: response.LocationConstraint
+                region: response.LocationConstraint,
             };
         });
     }
@@ -222,7 +223,7 @@ class BoltS3OpsClient {
             const response = yield client.send(command);
             const statusCode = response.$metadata && response.$metadata.httpStatusCode;
             return {
-                statusCode: statusCode
+                statusCode: statusCode,
             };
         });
     }

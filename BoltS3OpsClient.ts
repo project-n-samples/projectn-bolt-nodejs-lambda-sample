@@ -34,6 +34,7 @@ export enum RequestTypes {
   HeadBucket = "HEAD_BUCKET",
   PutObject = "PUT_OBJECT",
   DeleteObject = "DELETE_OBJECT",
+  All = "ALL", // This is only for Perf
 }
 
 interface IBoltS3OpsClient {
@@ -93,8 +94,8 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
   async listObjectsV2(client: S3Client, bucket: string) {
     const command = new ListObjectsV2Command({ Bucket: bucket });
     const response = await client.send(command);
-    const objects = (response["Contents"] || []).map((x) => x.Key);
-    return { objects: objects };
+    const keys = (response["Contents"] || []).map((x) => x.Key);
+    return { objects: keys };
   }
 
   async streamToString(stream) {
@@ -132,7 +133,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
         ? await this.dezipped(body)
         : await this.streamToString(body);
     const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
-    return { md5 };
+    return { md5, contentLength: response["ContentLength"] };
   }
 
   /**
@@ -181,7 +182,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     const statusCode = response.$metadata && response.$metadata.httpStatusCode;
     return {
       statusCode: statusCode,
-      region: response.LocationConstraint
+      region: response.LocationConstraint,
     };
   }
 
@@ -224,7 +225,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     const response = await client.send(command);
     const statusCode = response.$metadata && response.$metadata.httpStatusCode;
     return {
-      statusCode: statusCode
+      statusCode: statusCode,
     };
   }
 }
