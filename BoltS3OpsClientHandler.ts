@@ -49,7 +49,7 @@ exports.lambdaHandler = async (event, context, callback) => {
     const response = await opsClient.processEvent(event);
   
     return new Promise((res, rej) => {
-        callback(undefined,{response});
+        callback(undefined, response);
         res('success');
     });
   })();

@@ -58,7 +58,7 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
         const response = yield opsClient.processEvent(event);
         return new Promise((res, rej) => {
-            callback(undefined, { response });
+            callback(undefined, response);
             res('success');
         });
     }))();
