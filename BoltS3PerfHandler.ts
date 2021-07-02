@@ -37,6 +37,7 @@ const perf = require("execution-time")();
  * <param name="context">lambda context</param>
  * <re>response from BoltS3Perf</r
  *  */
+
 exports.lambdaHandler = async (event, context, callback) => {
   Object.keys(event).forEach((prop) => {
     if (["sdkType", "requestType"].includes(prop)) {
@@ -70,8 +71,8 @@ exports.lambdaHandler = async (event, context, callback) => {
       _times = sort(_times);
       const stats = {
         average: `${average(_times).toFixed(2)} ${_measurement}`,
-        p50: `${_times[_times.length / 2].toFixed(2)} ${_measurement}`,
-        p90: `${_times[Math.floor((_times.length - 1) * 0.9)]} ${_measurement}`,
+        p50: `${_times[Math.floor(_times.length / 2)].toFixed(2)} ${_measurement}`,
+        p90: `${_times[Math.floor((_times.length - 1) * 0.9)].toFixed(2)} ${_measurement}`,
       };
       return stats;
     };
@@ -111,42 +112,25 @@ exports.lambdaHandler = async (event, context, callback) => {
     const boltObjectSizes = [];
 
     for (let key of keys) {
-      if (!event.sdkType || event.sdkType === SdkTypes.Bolt) {
-        //TODO: (MP) - Delete for later
+      const runFor = async (sdkType, _times, _throughputs, _objectSizes) => {
         perf.start();
         const response = await opsClient.processEvent({
           ...event,
-          sdkType: SdkTypes.Bolt,
+          sdkType: sdkType,
           key,
           value: generateRandomValue(),
-        }); // TODO: Clean-up event before process
+        }); // TODO: Clean-up event before process though not a problem
         const perfTime = perf.stop().time;
-        boltTimes.push(perfTime);
+        _times.push(perfTime);
         if (event.requestType === RequestTypes.ListObjectsV2) {
-          boltThroughputs.push(response["objects"].length / perfTime);
+          _throughputs.push(response["objects"].length / perfTime);
         } else if (event.requestType === RequestTypes.GetObject) {
-          boltObjectSizes.push(response["contentLength"]);
+          _objectSizes.push(response["contentLength"]);
         }
-      }
-      if (!event.sdkType || event.sdkType.toUpperCase() === SdkTypes.S3) {
-        //TODO: (MP) - Delete for later
-        perf.start();
-        const response = await opsClient.processEvent({
-          ...event,
-          sdkType: SdkTypes.S3,
-          key,
-          value: generateRandomValue(),
-        }); // TODO: Clean-up event before process
-        const perfTime = perf.stop().time;
-        s3Times.push(perfTime);
-        if (event.requestType === RequestTypes.ListObjectsV2) {
-          s3Throughputs.push(response["objects"].length / perfTime);
-        } else if (event.requestType === RequestTypes.GetObject) {
-          s3ObjectSizes.push(response["contentLength"]);
-        }
-      }
+      };
+      await runFor(SdkTypes.S3, s3Times, s3Throughputs, s3ObjectSizes);
+      await runFor(SdkTypes.Bolt, boltTimes, boltThroughputs, boltObjectSizes);
     }
-
     return new Promise((res, rej) => {
       callback(undefined, {
         s3PerfStats: computePerfStats(s3Times, s3Throughputs, s3ObjectSizes),
@@ -161,12 +145,14 @@ exports.lambdaHandler = async (event, context, callback) => {
   })();
 };
 
+// process.env.BOLT_URL =
+//     "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-2";
+
 // exports.lambdaHandler(
 //   {
-//     numKeysStr: 50,
-//     sdkType: "s3",
-//     bucket: "mp-test-bucket-3",
-//     requestType: "get_object",
+//     requestType: "list_objects_v2",
+//     bucket: "mp-test-bucket-5",
 //   },
 //   {},
 //   console.log
