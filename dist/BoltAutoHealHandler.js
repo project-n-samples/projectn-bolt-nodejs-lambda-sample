@@ -24,6 +24,12 @@ const perf = require("execution-time")();
  * <returns>time taken to auto-heal</returns>
  */
 exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
+    const WAIT_TIME_BETWEEN_RETRY = 400; //ms
+    const wait = (ms) => {
+        return new Promise((resolve) => {
+            setTimeout(resolve, ms);
+        });
+    };
     yield (() => __awaiter(void 0, void 0, void 0, function* () {
         const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
         let isObjectHealed = false;
@@ -34,16 +40,24 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
                 isObjectHealed = true;
             }
             catch (ex) {
-                console.log("Trying again...");
+                console.log("Waiting...");
+                yield wait(WAIT_TIME_BETWEEN_RETRY);
+                console.log("Re-trying Get Object...");
             }
         }
         const results = perf.stop();
         return new Promise((res, rej) => {
             callback(undefined, {
-                auto_heal_time: `${(results.time / 1000).toFixed(2)} secs`,
+                auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRY).toFixed(2)} ms`,
             });
             res("success");
         });
     }))();
 });
+process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
+process.env.AWS_REGION = "us-east-1";
+exports.lambdaHandler({
+    bucket: "bolt-mp-autoheal-1",
+    key: "config",
+}, {}, console.log);
 //# sourceMappingURL=BoltAutoHealHandler.js.map

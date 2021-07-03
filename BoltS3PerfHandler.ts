@@ -71,14 +71,23 @@ exports.lambdaHandler = async (event, context, callback) => {
       _times = sort(_times);
       const stats = {
         average: `${average(_times).toFixed(2)} ${_measurement}`,
-        p50: `${_times[Math.floor(_times.length / 2)].toFixed(2)} ${_measurement}`,
-        p90: `${_times[Math.floor((_times.length - 1) * 0.9)].toFixed(2)} ${_measurement}`,
+        p50: `${_times[Math.floor(_times.length / 2)].toFixed(
+          2
+        )} ${_measurement}`,
+        p90: `${_times[Math.floor((_times.length - 1) * 0.9)].toFixed(
+          2
+        )} ${_measurement}`,
       };
       return stats;
     };
     return {
       latency: stats(opTimes, "ms"),
-      throughput: stats(tpTimes, "ms"),
+      throughput:
+        tpTimes.length > 0
+          ? stats(tpTimes, "objects/ms")
+          : `${
+              opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)
+            } objects/ms`,
       objectSize: stats(objTimes, "bytes"),
     };
   };
@@ -151,8 +160,8 @@ exports.lambdaHandler = async (event, context, callback) => {
 
 // exports.lambdaHandler(
 //   {
-//     requestType: "list_objects_v2",
-//     bucket: "mp-test-bucket-5",
+//     bucket: "mp-test-bucket-7",
+//     key: "package.json"
 //   },
 //   {},
 //   console.log

@@ -80,7 +80,9 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         };
         return {
             latency: stats(opTimes, "ms"),
-            throughput: stats(tpTimes, "ms"),
+            throughput: tpTimes.length > 0
+                ? stats(tpTimes, "objects/ms")
+                : `${opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)} objects/ms`,
             objectSize: stats(objTimes, "bytes"),
         };
     };
@@ -131,8 +133,8 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
 // process.env.AWS_REGION = "us-east-2";
 // exports.lambdaHandler(
 //   {
-//     requestType: "list_objects_v2",
-//     bucket: "mp-test-bucket-5",
+//     bucket: "mp-test-bucket-7",
+//     key: "package.json"
 //   },
 //   {},
 //   console.log
