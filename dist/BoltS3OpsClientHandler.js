@@ -68,6 +68,6 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
 // exports.lambdaHandler({
 //     "requestType": "head_bucket",
 //     "sdkType": "s3",
-//     "bucket": "mp-test-bucket-2"
+//     "bucket": "mp-test-bucket-7"
 //   }, {}, console.log)
 //# sourceMappingURL=BoltS3OpsClientHandler.js.map

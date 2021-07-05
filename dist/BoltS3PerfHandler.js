@@ -80,7 +80,7 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         };
         return {
             latency: stats(opTimes, "ms"),
-            throughput: tpTimes.length > 0
+            throughput: tpTimes.length >= 0
                 ? stats(tpTimes, "objects/ms")
                 : `${opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)} objects/ms`,
             objectSize: stats(objTimes, "bytes"),
@@ -96,47 +96,76 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
                 BoltS3OpsClient_1.RequestTypes.All,
             ].includes(event.requestType)
                 ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`)
-                : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.S3 })))["objects"] || []).slice(0, numberOfObjects);
+                : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt })))["objects"] || []).slice(0, numberOfObjects);
         const s3Times = [];
         const boltTimes = [];
         const s3Throughputs = [];
         const boltThroughputs = [];
         const s3ObjectSizes = [];
         const boltObjectSizes = [];
+        let s3CompressedObjectsCount = 0;
+        let s3UncompressedObjectsCount = 0;
+        let boltCompressedObjectsCount = 0;
+        let boltUncompressedObjectsCount = 0;
         for (let key of keys) {
             const runFor = (sdkType, _times, _throughputs, _objectSizes) => __awaiter(void 0, void 0, void 0, function* () {
                 perf.start();
-                const response = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { sdkType: sdkType, key, value: generateRandomValue() })); // TODO: Clean-up event before process though not a problem
+                const response = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { isForStats: true, sdkType: sdkType, key, value: generateRandomValue() })); // TODO: Clean-up event before process though not a problem
                 const perfTime = perf.stop().time;
                 _times.push(perfTime);
                 if (event.requestType === BoltS3OpsClient_1.RequestTypes.ListObjectsV2) {
                     _throughputs.push(response["objects"].length / perfTime);
                 }
-                else if (event.requestType === BoltS3OpsClient_1.RequestTypes.GetObject) {
+                else if ([
+                    BoltS3OpsClient_1.RequestTypes.GetObject,
+                    BoltS3OpsClient_1.RequestTypes.GetObjectTTFB,
+                    BoltS3OpsClient_1.RequestTypes.GetObjectPassthrough,
+                    BoltS3OpsClient_1.RequestTypes.GetObjectPassthroughTTFB,
+                ].includes(event.requestType)) {
+                    if (response["isObjectCompressed"]) {
+                        if (sdkType === BoltS3OpsClient_1.SdkTypes.S3)
+                            s3CompressedObjectsCount++;
+                        else
+                            boltCompressedObjectsCount++;
+                    }
+                    else {
+                        if (sdkType === BoltS3OpsClient_1.SdkTypes.S3)
+                            s3UncompressedObjectsCount++;
+                        else
+                            boltUncompressedObjectsCount++;
+                    }
                     _objectSizes.push(response["contentLength"]);
                 }
             });
             yield runFor(BoltS3OpsClient_1.SdkTypes.S3, s3Times, s3Throughputs, s3ObjectSizes);
             yield runFor(BoltS3OpsClient_1.SdkTypes.Bolt, boltTimes, boltThroughputs, boltObjectSizes);
         }
+        const s3ObjectsInfo = s3CompressedObjectsCount || s3UncompressedObjectsCount
+            ? {
+                compressed: s3CompressedObjectsCount,
+                uncompressed: s3UncompressedObjectsCount,
+            }
+            : {};
+        const boltObjectsInfo = boltCompressedObjectsCount || boltUncompressedObjectsCount
+            ? {
+                compressed: boltCompressedObjectsCount,
+                uncompressed: boltUncompressedObjectsCount,
+            }
+            : {};
         return new Promise((res, rej) => {
             callback(undefined, {
-                s3PerfStats: computePerfStats(s3Times, s3Throughputs, s3ObjectSizes),
-                boltPerfStats: computePerfStats(boltTimes, boltThroughputs, boltObjectSizes),
+                s3PerfStats: Object.assign(Object.assign({}, computePerfStats(s3Times, s3Throughputs, s3ObjectSizes)), s3ObjectsInfo),
+                boltPerfStats: Object.assign(Object.assign({}, computePerfStats(boltTimes, boltThroughputs, boltObjectSizes)), boltObjectsInfo),
             });
             res("success");
         });
     }))();
 });
-// process.env.BOLT_URL =
-//     "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-2";
-// exports.lambdaHandler(
-//   {
-//     bucket: "mp-test-bucket-7",
-//     key: "package.json"
-//   },
-//   {},
-//   console.log
-// );
+process.env.BOLT_URL =
+    "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+process.env.AWS_REGION = "us-east-2";
+exports.lambdaHandler({
+    requestType: "get_object_passthrough_ttfb",
+    bucket: "mp-test-bucket-8",
+}, {}, console.log);
 //# sourceMappingURL=BoltS3PerfHandler.js.map

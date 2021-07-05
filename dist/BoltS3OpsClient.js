@@ -24,11 +24,14 @@ var RequestTypes;
 (function (RequestTypes) {
     RequestTypes["ListObjectsV2"] = "LIST_OBJECTS_V2";
     RequestTypes["GetObject"] = "GET_OBJECT";
+    RequestTypes["GetObjectTTFB"] = "GET_OBJECT_TTFB";
     RequestTypes["HeadObject"] = "HEAD_OBJECT";
     RequestTypes["ListBuckets"] = "LIST_BUCKETS";
     RequestTypes["HeadBucket"] = "HEAD_BUCKET";
     RequestTypes["PutObject"] = "PUT_OBJECT";
     RequestTypes["DeleteObject"] = "DELETE_OBJECT";
+    RequestTypes["GetObjectPassthrough"] = "GET_OBJECT_PASSTHROUGH";
+    RequestTypes["GetObjectPassthroughTTFB"] = "GET_OBJECT_PASSTHROUGH_TTFB";
     RequestTypes["All"] = "ALL";
 })(RequestTypes = exports.RequestTypes || (exports.RequestTypes = {}));
 /**
@@ -44,7 +47,7 @@ class BoltS3OpsClient {
                     event[prop] = event[prop].toUpperCase();
                 }
             });
-            console.log({ event }); // TODO: (MP) Delete for later
+            // console.log({ event }); // TODO: (MP) Delete for later
             /**
              * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
              * create an Bolt/S3 Client depending on the 'sdkType'
@@ -55,8 +58,16 @@ class BoltS3OpsClient {
                 if (event.requestType === RequestTypes.ListObjectsV2) {
                     return this.listObjectsV2(client, event.bucket);
                 }
-                else if (event.requestType === RequestTypes.GetObject) {
-                    return this.getObject(client, event.bucket, event.key);
+                else if ([
+                    RequestTypes.GetObject,
+                    RequestTypes.GetObjectTTFB,
+                    RequestTypes.GetObjectPassthrough,
+                    RequestTypes.GetObjectPassthroughTTFB,
+                ].includes(event.requestType)) {
+                    return this.getObject(client, event.bucket, event.key, event.isForStats, [
+                        RequestTypes.GetObjectTTFB,
+                        RequestTypes.GetObjectPassthroughTTFB,
+                    ].includes(event.requestType));
                 }
                 else if (event.requestType === RequestTypes.HeadObject) {
                     return this.headObject(client, event.bucket, event.key);
@@ -94,22 +105,42 @@ class BoltS3OpsClient {
             return { objects: keys };
         });
     }
-    streamToString(stream) {
+    streamToBuffer(stream, timeToFirstByte = false) {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
-                const chunks = [];
-                stream.on("data", (chunk) => chunks.push(chunk));
-                stream.on("error", reject);
-                stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+                if (timeToFirstByte) {
+                    resolve(stream.read(1));
+                    stream.on("error", reject);
+                }
+                else {
+                    const chunks = [];
+                    stream.on("data", (chunk) => chunks.push(chunk));
+                    stream.on("error", reject);
+                    stream.on("end", () => resolve(Buffer.concat(chunks)));
+                }
             });
         });
     }
-    dezipped(stream) {
+    streamToString(stream, timeToFirstByte = false) {
         return __awaiter(this, void 0, void 0, function* () {
+            const buffer = yield this.streamToBuffer(stream, timeToFirstByte);
             return new Promise((resolve, reject) => {
-                zlib.gunzip(stream, function (err, dezipped) {
-                    resolve(dezipped.toString());
-                });
+                resolve(buffer.toString("utf8"));
+            });
+        });
+    }
+    dezipped(stream, timeToFirstByte = false) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const buffer = yield this.streamToBuffer(stream, timeToFirstByte);
+            return new Promise((resolve, reject) => {
+                if (!timeToFirstByte) {
+                    zlib.gunzip(buffer, function (err, buffer) {
+                        resolve(buffer.toString("utf8"));
+                    });
+                }
+                else {
+                    resolve(buffer.toString("utf8"));
+                }
             });
         });
     }
@@ -119,19 +150,24 @@ class BoltS3OpsClient {
      * @param client
      * @param bucket
      * @param key
+     * @param timeToFirstByte
      * @returns md5 hash of the object
      */
-    getObject(client, bucket, key) {
+    getObject(client, bucket, key, isForStats = false, timeToFirstByte = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const command = new client_s3_2.GetObjectCommand({ Bucket: bucket, Key: key });
             const response = yield client.send(command);
             const body = response["Body"];
             // If Object is gzip encoded, compute MD5 on the decompressed object.
-            const data = response["ContentEncoding"] == "gzip" || key.endsWith(".gz")
-                ? yield this.dezipped(body)
-                : yield this.streamToString(body);
+            const isObjectCompressed = response["ContentEncoding"] == "gzip" || key.endsWith(".gz");
+            const data = isObjectCompressed
+                ? yield this.dezipped(body, timeToFirstByte)
+                : yield this.streamToString(body, timeToFirstByte);
             const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
-            return { md5, contentLength: response["ContentLength"] };
+            const additional = isForStats
+                ? { contentLength: response["ContentLength"], isObjectCompressed }
+                : {};
+            return Object.assign({ md5 }, additional);
         });
     }
     /**

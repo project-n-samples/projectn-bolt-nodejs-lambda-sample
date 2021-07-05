@@ -60,5 +60,5 @@ exports.lambdaHandler = async (event, context, callback) => {
 // exports.lambdaHandler({
 //     "requestType": "head_bucket",
 //     "sdkType": "s3",
-//     "bucket": "mp-test-bucket-2"
+//     "bucket": "mp-test-bucket-7"
 //   }, {}, console.log)

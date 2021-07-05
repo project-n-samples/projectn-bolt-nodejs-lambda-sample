@@ -83,7 +83,7 @@ exports.lambdaHandler = async (event, context, callback) => {
     return {
       latency: stats(opTimes, "ms"),
       throughput:
-        tpTimes.length > 0
+        tpTimes.length >= 0
           ? stats(tpTimes, "objects/ms")
           : `${
               opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)
@@ -108,7 +108,7 @@ exports.lambdaHandler = async (event, context, callback) => {
               await opsClient.processEvent({
                 ...event,
                 requestType: RequestTypes.ListObjectsV2,
-                sdkType: SdkTypes.S3,
+                sdkType: SdkTypes.Bolt,
               })
             )["objects"] || []
           ).slice(0, numberOfObjects);
@@ -120,11 +120,17 @@ exports.lambdaHandler = async (event, context, callback) => {
     const s3ObjectSizes = [];
     const boltObjectSizes = [];
 
+    let s3CompressedObjectsCount = 0;
+    let s3UncompressedObjectsCount = 0;
+    let boltCompressedObjectsCount = 0;
+    let boltUncompressedObjectsCount = 0;
+
     for (let key of keys) {
       const runFor = async (sdkType, _times, _throughputs, _objectSizes) => {
         perf.start();
         const response = await opsClient.processEvent({
           ...event,
+          isForStats: true,
           sdkType: sdkType,
           key,
           value: generateRandomValue(),
@@ -133,36 +139,67 @@ exports.lambdaHandler = async (event, context, callback) => {
         _times.push(perfTime);
         if (event.requestType === RequestTypes.ListObjectsV2) {
           _throughputs.push(response["objects"].length / perfTime);
-        } else if (event.requestType === RequestTypes.GetObject) {
+        } else if (
+          [
+            RequestTypes.GetObject,
+            RequestTypes.GetObjectTTFB,
+            RequestTypes.GetObjectPassthrough,
+            RequestTypes.GetObjectPassthroughTTFB,
+          ].includes(event.requestType)
+        ) {
+          if (response["isObjectCompressed"]) {
+            if (sdkType === SdkTypes.S3) s3CompressedObjectsCount++;
+            else boltCompressedObjectsCount++;
+          } else {
+            if (sdkType === SdkTypes.S3) s3UncompressedObjectsCount++;
+            else boltUncompressedObjectsCount++;
+          }
           _objectSizes.push(response["contentLength"]);
         }
       };
       await runFor(SdkTypes.S3, s3Times, s3Throughputs, s3ObjectSizes);
       await runFor(SdkTypes.Bolt, boltTimes, boltThroughputs, boltObjectSizes);
     }
+
+    const s3ObjectsInfo =
+      s3CompressedObjectsCount || s3UncompressedObjectsCount
+        ? {
+            compressed: s3CompressedObjectsCount,
+            uncompressed: s3UncompressedObjectsCount,
+          }
+        : {};
+    const boltObjectsInfo =
+      boltCompressedObjectsCount || boltUncompressedObjectsCount
+        ? {
+            compressed: boltCompressedObjectsCount,
+            uncompressed: boltUncompressedObjectsCount,
+          }
+        : {};
     return new Promise((res, rej) => {
       callback(undefined, {
-        s3PerfStats: computePerfStats(s3Times, s3Throughputs, s3ObjectSizes),
-        boltPerfStats: computePerfStats(
-          boltTimes,
-          boltThroughputs,
-          boltObjectSizes
-        ),
+        s3PerfStats: {
+          ...computePerfStats(s3Times, s3Throughputs, s3ObjectSizes),
+          ...s3ObjectsInfo,
+        },
+        boltPerfStats: {
+          ...computePerfStats(boltTimes, boltThroughputs, boltObjectSizes),
+          ...boltObjectsInfo,
+        },
       });
       res("success");
     });
   })();
 };
 
-// process.env.BOLT_URL =
-//     "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-2";
+process.env.BOLT_URL =
+  "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+process.env.AWS_REGION = "us-east-2";
 
-// exports.lambdaHandler(
-//   {
-//     bucket: "mp-test-bucket-7",
-//     key: "package.json"
-//   },
-//   {},
-//   console.log
-// );
+exports.lambdaHandler(
+  {
+    requestType: "get_object_passthrough_ttfb",
+    bucket: "mp-test-bucket-8",
+  },
+  {},
+  console.log
+);

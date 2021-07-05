@@ -24,7 +24,7 @@ const perf = require("execution-time")();
  * <returns>time taken to auto-heal</returns>
  */
 exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
-    const WAIT_TIME_BETWEEN_RETRY = 400; //ms
+    const WAIT_TIME_BETWEEN_RETRIES = 400; //ms
     const wait = (ms) => {
         return new Promise((resolve) => {
             setTimeout(resolve, ms);
@@ -41,23 +41,27 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
             }
             catch (ex) {
                 console.log("Waiting...");
-                yield wait(WAIT_TIME_BETWEEN_RETRY);
+                yield wait(WAIT_TIME_BETWEEN_RETRIES);
                 console.log("Re-trying Get Object...");
             }
         }
         const results = perf.stop();
         return new Promise((res, rej) => {
             callback(undefined, {
-                auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRY).toFixed(2)} ms`,
+                auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRIES).toFixed(2)} ms`,
             });
             res("success");
         });
     }))();
 });
-process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
-process.env.AWS_REGION = "us-east-1";
-exports.lambdaHandler({
-    bucket: "bolt-mp-autoheal-1",
-    key: "config",
-}, {}, console.log);
+// process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     bucket: "bolt-mp-autoheal-1",
+//     key: "config",
+//   },
+//   {},
+//   console.log
+// );
 //# sourceMappingURL=BoltAutoHealHandler.js.map

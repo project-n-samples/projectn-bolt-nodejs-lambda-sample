@@ -2,6 +2,7 @@ import { BoltS3Client } from "projectn-bolt-aws-typescript-sdk";
 import { S3Client } from "@aws-sdk/client-s3";
 const { createHmac, createHash } = require("crypto");
 const zlib = require("zlib");
+import { Readable } from "stream";
 
 import {
   ListObjectsV2Command,
@@ -19,6 +20,9 @@ type LambdaEventType = {
   bucket?: string;
   key?: string;
   value?: string;
+
+  isForStats?: boolean;
+  TTFB?: boolean; // Time to first byte
 };
 
 export enum SdkTypes {
@@ -29,11 +33,15 @@ export enum SdkTypes {
 export enum RequestTypes {
   ListObjectsV2 = "LIST_OBJECTS_V2",
   GetObject = "GET_OBJECT",
+  GetObjectTTFB = "GET_OBJECT_TTFB", // This is only for Perf
   HeadObject = "HEAD_OBJECT",
   ListBuckets = "LIST_BUCKETS",
   HeadBucket = "HEAD_BUCKET",
   PutObject = "PUT_OBJECT",
   DeleteObject = "DELETE_OBJECT",
+
+  GetObjectPassthrough = "GET_OBJECT_PASSTHROUGH", // This is only for Perf
+  GetObjectPassthroughTTFB = "GET_OBJECT_PASSTHROUGH_TTFB", // This is only for Perf
   All = "ALL", // This is only for Perf
 }
 
@@ -54,7 +62,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
         event[prop] = event[prop].toUpperCase();
       }
     });
-    console.log({ event }); // TODO: (MP) Delete for later
+    // console.log({ event }); // TODO: (MP) Delete for later
     /**
      * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
      * create an Bolt/S3 Client depending on the 'sdkType'
@@ -66,8 +74,24 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
       //Performs an S3 / Bolt operation based on the input 'requestType'
       if (event.requestType === RequestTypes.ListObjectsV2) {
         return this.listObjectsV2(client, event.bucket);
-      } else if (event.requestType === RequestTypes.GetObject) {
-        return this.getObject(client, event.bucket, event.key);
+      } else if (
+        [
+          RequestTypes.GetObject,
+          RequestTypes.GetObjectTTFB,
+          RequestTypes.GetObjectPassthrough,
+          RequestTypes.GetObjectPassthroughTTFB,
+        ].includes(event.requestType as RequestTypes)
+      ) {
+        return this.getObject(
+          client,
+          event.bucket,
+          event.key,
+          event.isForStats,
+          [
+            RequestTypes.GetObjectTTFB,
+            RequestTypes.GetObjectPassthroughTTFB,
+          ].includes(event.requestType as RequestTypes)
+        );
       } else if (event.requestType === RequestTypes.HeadObject) {
         return this.headObject(client, event.bucket, event.key);
       } else if (event.requestType === RequestTypes.ListBuckets) {
@@ -98,20 +122,40 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     return { objects: keys };
   }
 
-  async streamToString(stream) {
+  async streamToBuffer(
+    stream: Readable,
+    timeToFirstByte = false
+  ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const chunks = [];
-      stream.on("data", (chunk) => chunks.push(chunk));
-      stream.on("error", reject);
-      stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      if (timeToFirstByte) {
+        resolve(stream.read(1));
+        stream.on("error", reject);
+      } else {
+        const chunks = [];
+        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("error", reject);
+        stream.on("end", () => resolve(Buffer.concat(chunks)));
+      }
     });
   }
 
-  async dezipped(stream) {
+  async streamToString(stream: Readable, timeToFirstByte = false) {
+    const buffer = await this.streamToBuffer(stream, timeToFirstByte);
     return new Promise((resolve, reject) => {
-      zlib.gunzip(stream, function (err, dezipped) {
-        resolve(dezipped.toString());
-      });
+      resolve(buffer.toString("utf8"));
+    });
+  }
+
+  async dezipped(stream, timeToFirstByte = false) {
+    const buffer = await this.streamToBuffer(stream, timeToFirstByte);
+    return new Promise((resolve, reject) => {
+      if (!timeToFirstByte) {
+        zlib.gunzip(buffer, function (err, buffer) {
+          resolve(buffer.toString("utf8"));
+        });
+      } else {
+        resolve(buffer.toString("utf8"));
+      }
     });
   }
 
@@ -121,19 +165,30 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * @param client
    * @param bucket 
    * @param key 
+   * @param timeToFirstByte
    * @returns md5 hash of the object
    */
-  async getObject(client: S3Client, bucket: string, key: string) {
+  async getObject(
+    client: S3Client,
+    bucket: string,
+    key: string,
+    isForStats: boolean = false,
+    timeToFirstByte: boolean = false
+  ) {
     const command = new GetObjectCommand({ Bucket: bucket, Key: key });
     const response = await client.send(command);
     const body = response["Body"];
     // If Object is gzip encoded, compute MD5 on the decompressed object.
-    const data =
-      response["ContentEncoding"] == "gzip" || key.endsWith(".gz")
-        ? await this.dezipped(body)
-        : await this.streamToString(body);
+    const isObjectCompressed =
+      response["ContentEncoding"] == "gzip" || key.endsWith(".gz");
+    const data = isObjectCompressed
+      ? await this.dezipped(body, timeToFirstByte)
+      : await this.streamToString(body as Readable, timeToFirstByte);
     const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
-    return { md5, contentLength: response["ContentLength"] };
+    const additional = isForStats
+      ? { contentLength: response["ContentLength"], isObjectCompressed }
+      : {};
+    return { md5, ...additional };
   }
 
   /**
