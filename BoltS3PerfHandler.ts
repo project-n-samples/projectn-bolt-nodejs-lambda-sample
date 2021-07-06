@@ -176,7 +176,7 @@ function computePerfStats(
 ): {
   latency: { [key: string]: string };
   throughput: { [key: string]: string };
-  objectSize: { [key: string]: string };
+  objectSize?: { [key: string]: string };
 } {
   const sort = (arr: Array<number>) => arr.sort((a, b) => a - b);
   const average = (arr: Array<number>) =>
@@ -205,7 +205,7 @@ function computePerfStats(
         : `${(
             opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)
           ).toFixed(5)} objects/ms`,
-    objectSize: stats(objTimes, 2, "bytes"),
+    ...(objTimes.length > 0 ? { objectSize: stats(objTimes, 2, "bytes") } : {}),
   };
 }
 

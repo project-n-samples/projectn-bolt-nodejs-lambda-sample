@@ -150,13 +150,9 @@ function computePerfStats(opTimes, tpTimes = [], objTimes = []) {
         };
         return stats;
     };
-    return {
-        latency: stats(opTimes, 2, "ms"),
-        throughput: tpTimes.length > 0 || opTimes.length === 0
+    return Object.assign({ latency: stats(opTimes, 2, "ms"), throughput: tpTimes.length > 0 || opTimes.length === 0
             ? stats(tpTimes, 5, "objects/ms")
-            : `${(opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)).toFixed(5)} objects/ms`,
-        objectSize: stats(objTimes, 2, "bytes"),
-    };
+            : `${(opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)).toFixed(5)} objects/ms` }, (objtimes.length ? { objectSize: stats(objTimes, 2, "bytes") } : {}));
 }
 // process.env.BOLT_URL =
 //   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
