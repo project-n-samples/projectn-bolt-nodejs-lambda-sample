@@ -30,29 +30,27 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
             setTimeout(resolve, ms);
         });
     };
-    yield (() => __awaiter(void 0, void 0, void 0, function* () {
-        const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
-        let isObjectHealed = false;
-        perf.start();
-        while (!isObjectHealed) {
-            try {
-                yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
-                isObjectHealed = true;
-            }
-            catch (ex) {
-                console.log("Waiting...");
-                yield wait(WAIT_TIME_BETWEEN_RETRIES);
-                console.log("Re-trying Get Object...");
-            }
+    const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
+    let isObjectHealed = false;
+    perf.start();
+    while (!isObjectHealed) {
+        try {
+            yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
+            isObjectHealed = true;
         }
-        const results = perf.stop();
-        return new Promise((res, rej) => {
-            callback(undefined, {
-                auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRIES).toFixed(2)} ms`,
-            });
-            res("success");
+        catch (ex) {
+            console.log("Waiting...");
+            yield wait(WAIT_TIME_BETWEEN_RETRIES);
+            console.log("Re-trying Get Object...");
+        }
+    }
+    const results = perf.stop();
+    return new Promise((res, rej) => {
+        callback(undefined, {
+            auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRIES).toFixed(2)} ms`,
         });
-    }))();
+        res("success");
+    });
 });
 // process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
 // process.env.AWS_REGION = "us-east-1";

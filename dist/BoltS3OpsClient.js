@@ -55,34 +55,27 @@ class BoltS3OpsClient {
             const client = event.sdkType === SdkTypes.Bolt ? new projectn_bolt_aws_typescript_sdk_1.BoltS3Client({}) : new client_s3_1.S3Client({});
             try {
                 //Performs an S3 / Bolt operation based on the input 'requestType'
-                if (event.requestType === RequestTypes.ListObjectsV2) {
-                    return this.listObjectsV2(client, event.bucket);
-                }
-                else if ([
-                    RequestTypes.GetObject,
-                    RequestTypes.GetObjectTTFB,
-                    RequestTypes.GetObjectPassthrough,
-                    RequestTypes.GetObjectPassthroughTTFB,
-                ].includes(event.requestType)) {
-                    return this.getObject(client, event.bucket, event.key, event.isForStats, [
-                        RequestTypes.GetObjectTTFB,
-                        RequestTypes.GetObjectPassthroughTTFB,
-                    ].includes(event.requestType));
-                }
-                else if (event.requestType === RequestTypes.HeadObject) {
-                    return this.headObject(client, event.bucket, event.key);
-                }
-                else if (event.requestType === RequestTypes.ListBuckets) {
-                    return this.listBuckets(client);
-                }
-                else if (event.requestType === RequestTypes.HeadBucket) {
-                    return this.headBucketAlongWithRegion(client, event.bucket);
-                }
-                else if (event.requestType === RequestTypes.PutObject) {
-                    return this.putObject(client, event.bucket, event.key, event.value);
-                }
-                else if (event.requestType === RequestTypes.DeleteObject) {
-                    return this.deleteObject(client, event.bucket, event.key);
+                switch (event.requestType) {
+                    case RequestTypes.ListObjectsV2:
+                        return this.listObjectsV2(client, event.bucket);
+                    case RequestTypes.GetObject:
+                    case RequestTypes.GetObjectTTFB:
+                    case RequestTypes.GetObjectPassthrough:
+                    case RequestTypes.GetObjectPassthroughTTFB:
+                        return this.getObject(client, event.bucket, event.key, event.isForStats, [
+                            RequestTypes.GetObjectTTFB,
+                            RequestTypes.GetObjectPassthroughTTFB,
+                        ].includes(event.requestType));
+                    case RequestTypes.ListBuckets:
+                        return this.listBuckets(client);
+                    case RequestTypes.HeadBucket:
+                        return this.headBucketAlongWithRegion(client, event.bucket);
+                    case RequestTypes.HeadObject:
+                        return this.headObject(client, event.bucket, event.key);
+                    case RequestTypes.PutObject:
+                        return this.putObject(client, event.bucket, event.key, event.value);
+                    case RequestTypes.DeleteObject:
+                        return this.deleteObject(client, event.bucket, event.key);
                 }
             }
             catch (ex) {
@@ -183,13 +176,13 @@ class BoltS3OpsClient {
             const command = new client_s3_2.HeadObjectCommand({ Bucket: bucket, Key: key });
             const response = yield client.send(command);
             return {
-                Expiration: response["Expiration"],
-                lastModified: response["LastModified"].toISOString(),
-                ContentLength: response["ContentLength"],
-                ContentEncoding: response["ContentEncoding"],
-                ETag: response["ETag"],
-                VersionId: response["VersionId"],
-                StorageClass: response["StorageClass"],
+                expiration: response.Expiration,
+                lastModified: response.LastModified.toISOString(),
+                contentLength: response.ContentLength,
+                contentEncoding: response.ContentEncoding,
+                eTag: response.ETag,
+                versionId: response.VersionId,
+                storageClass: response.StorageClass,
             };
         });
     }
@@ -240,9 +233,9 @@ class BoltS3OpsClient {
             });
             const response = yield client.send(command);
             return {
-                ETag: response["ETag"],
-                Expiration: response["Expiration"],
-                VersionId: response["VersionId"],
+                eTag: response.ETag,
+                expiration: response.Expiration,
+                versionId: response.VersionId,
             };
         });
     }

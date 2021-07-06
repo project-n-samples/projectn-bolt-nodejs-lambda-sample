@@ -1,4 +1,10 @@
-import { BoltS3OpsClient, SdkTypes, RequestTypes } from "./BoltS3OpsClient";
+import {
+  BoltS3OpsClient,
+  SdkTypes,
+  RequestTypes,
+  GetObjectResponse,
+  ListObjectsV2Response,
+} from "./BoltS3OpsClient";
 const perf = require("execution-time")();
 /**
  * <summary>
@@ -37,169 +43,182 @@ const perf = require("execution-time")();
  * <param name="context">lambda context</param>
  * <re>response from BoltS3Perf</r
  *  */
-
 exports.lambdaHandler = async (event, context, callback) => {
-  Object.keys(event).forEach((prop) => {
-    if (["sdkType", "requestType"].includes(prop)) {
-      event[prop] = event[prop].toUpperCase();
-    }
-  });
-  const numberOfObjects = event.numKeysStr
-    ? parseInt(event.numKeysStr) <= 1000
-      ? parseInt(event.numKeysStr)
-      : 1000
-    : 1000;
-  const generateRandomValue = () =>
-    new Array(event.objLengthStr ? parseInt(event.objLengthStr) : 100)
-      .fill(0)
-      .map((x, i) =>
-        String.fromCharCode(Math.floor(Math.random() * (122 - 48)) + 48)
-      )
-      .join("");
-  const computePerfStats = (
-    opTimes: Array<number>,
-    tpTimes: Array<number> = [],
-    objTimes: Array<number> = []
-  ) => {
-    const sort = (arr: Array<number>) => arr.sort((a, b) => a - b);
-    const average = (arr: Array<number>) =>
-      arr.reduce((a, b) => a + b) / arr.length;
-    const stats = (_times, _measurement) => {
-      if (_times.length === 0) {
-        return {};
-      }
-      _times = sort(_times);
-      const stats = {
-        average: `${average(_times).toFixed(2)} ${_measurement}`,
-        p50: `${_times[Math.floor(_times.length / 2)].toFixed(
-          2
-        )} ${_measurement}`,
-        p90: `${_times[Math.floor((_times.length - 1) * 0.9)].toFixed(
-          2
-        )} ${_measurement}`,
-      };
-      return stats;
-    };
-    return {
-      latency: stats(opTimes, "ms"),
-      throughput:
-        tpTimes.length >= 0
-          ? stats(tpTimes, "objects/ms")
-          : `${
-              opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)
-            } objects/ms`,
-      objectSize: stats(objTimes, "bytes"),
-    };
-  };
+  const getPerfStats = async (requestType: RequestTypes) => {
+    const numberOfObjects = event.numKeysStr
+      ? parseInt(event.numKeysStr) <= 1000
+        ? parseInt(event.numKeysStr)
+        : 1000
+      : 1000;
+    const generateRandomValue = () =>
+      new Array(event.objLengthStr ? parseInt(event.objLengthStr) : 100)
+        .fill(0)
+        .map((x, i) =>
+          String.fromCharCode(Math.floor(Math.random() * (122 - 48)) + 48)
+        )
+        .join("");
 
-  await (async () => {
     const opsClient = new BoltS3OpsClient();
     const keys =
-      event.requestType === RequestTypes.ListObjectsV2
-        ? new Array(10).fill(0).map((x, i) => "just to iterate")
+      requestType === RequestTypes.ListObjectsV2
+        ? new Array(10).fill(0).map((x, i) => "dummy key") // For ListObjectsV2, fetching objects process is only repeated for 10 times
         : [
             RequestTypes.PutObject,
             RequestTypes.DeleteObject,
             RequestTypes.All,
-          ].includes(event.requestType)
-        ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`)
+          ].includes(requestType)
+        ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT related performace tests
         : (
             (
               await opsClient.processEvent({
                 ...event,
                 requestType: RequestTypes.ListObjectsV2,
-                sdkType: SdkTypes.Bolt,
+                sdkType: SdkTypes.Bolt, // Here sdkType either S3 or Bolt works since both returns same keys in ideal case
               })
             )["objects"] || []
-          ).slice(0, numberOfObjects);
+          ).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
 
-    const s3Times = [];
-    const boltTimes = [];
-    const s3Throughputs = [];
-    const boltThroughputs = [];
-    const s3ObjectSizes = [];
-    const boltObjectSizes = [];
-
-    let s3CompressedObjectsCount = 0;
-    let s3UncompressedObjectsCount = 0;
-    let boltCompressedObjectsCount = 0;
-    let boltUncompressedObjectsCount = 0;
-
-    for (let key of keys) {
-      const runFor = async (sdkType, _times, _throughputs, _objectSizes) => {
+    const runFor = async (sdkType) => {
+      const times = [],
+        throughputs = [],
+        objectSizes = [];
+      let compressedObjectsCount = 0,
+        unCompressedObjectsCount = 0;
+      for (let key of keys) {
         perf.start();
         const response = await opsClient.processEvent({
           ...event,
+          requestType,
           isForStats: true,
           sdkType: sdkType,
           key,
           value: generateRandomValue(),
-        }); // TODO: Clean-up event before process though not a problem
+        });
         const perfTime = perf.stop().time;
-        _times.push(perfTime);
-        if (event.requestType === RequestTypes.ListObjectsV2) {
-          _throughputs.push(response["objects"].length / perfTime);
+        times.push(perfTime);
+        if (requestType === RequestTypes.ListObjectsV2) {
+          throughputs.push(
+            (response as ListObjectsV2Response).objects.length / perfTime
+          );
         } else if (
           [
             RequestTypes.GetObject,
             RequestTypes.GetObjectTTFB,
             RequestTypes.GetObjectPassthrough,
             RequestTypes.GetObjectPassthroughTTFB,
-          ].includes(event.requestType)
+          ].includes(requestType)
         ) {
-          if (response["isObjectCompressed"]) {
-            if (sdkType === SdkTypes.S3) s3CompressedObjectsCount++;
-            else boltCompressedObjectsCount++;
+          if ((response as GetObjectResponse).isObjectCompressed) {
+            compressedObjectsCount++;
           } else {
-            if (sdkType === SdkTypes.S3) s3UncompressedObjectsCount++;
-            else boltUncompressedObjectsCount++;
+            unCompressedObjectsCount++;
           }
-          _objectSizes.push(response["contentLength"]);
+          objectSizes.push((response as GetObjectResponse).contentLength);
         }
-      };
-      await runFor(SdkTypes.S3, s3Times, s3Throughputs, s3ObjectSizes);
-      await runFor(SdkTypes.Bolt, boltTimes, boltThroughputs, boltObjectSizes);
-    }
+      }
 
-    const s3ObjectsInfo =
-      s3CompressedObjectsCount || s3UncompressedObjectsCount
-        ? {
-            compressed: s3CompressedObjectsCount,
-            uncompressed: s3UncompressedObjectsCount,
-          }
-        : {};
-    const boltObjectsInfo =
-      boltCompressedObjectsCount || boltUncompressedObjectsCount
-        ? {
-            compressed: boltCompressedObjectsCount,
-            uncompressed: boltUncompressedObjectsCount,
-          }
-        : {};
-    return new Promise((res, rej) => {
-      callback(undefined, {
-        s3PerfStats: {
-          ...computePerfStats(s3Times, s3Throughputs, s3ObjectSizes),
-          ...s3ObjectsInfo,
-        },
-        boltPerfStats: {
-          ...computePerfStats(boltTimes, boltThroughputs, boltObjectSizes),
-          ...boltObjectsInfo,
-        },
-      });
-      res("success");
-    });
-  })();
+      return {
+        ...computePerfStats(times, throughputs, objectSizes),
+        ...(compressedObjectsCount || unCompressedObjectsCount
+          ? {
+              compressedObjectsCount,
+              unCompressedObjectsCount,
+            }
+          : {}),
+      };
+    };
+    const s3PerfStats = await runFor(SdkTypes.S3);
+    const boltPerfStats = await runFor(SdkTypes.Bolt);
+
+    console.log(`Performance statistics of ${requestType} just got completed.`);
+    return {
+      // requestType,
+      ...s3PerfStats,
+      ...boltPerfStats,
+    };
+  };
+
+  Object.keys(event).forEach((prop) => {
+    if (["sdkType", "requestType"].includes(prop)) {
+      event[prop] = event[prop].toUpperCase();
+    }
+  });
+  const perfStats =
+    event.requestType !== RequestTypes.All
+      ? await getPerfStats(event.requestType)
+      : {
+          [RequestTypes.PutObject]: await getPerfStats(RequestTypes.PutObject),
+          [RequestTypes.DeleteObject]: await getPerfStats(
+            RequestTypes.DeleteObject
+          ),
+          [RequestTypes.ListObjectsV2]: await getPerfStats(
+            RequestTypes.ListObjectsV2
+          ),
+          [RequestTypes.GetObject]: await getPerfStats(RequestTypes.GetObject),
+        };
+
+  return new Promise((res, rej) => {
+    callback(undefined, perfStats);
+    res("success");
+  });
 };
 
-process.env.BOLT_URL =
-  "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-process.env.AWS_REGION = "us-east-2";
+/**
+ * @param opTimes array of latencies
+ * @param tpTimes array of throughputs
+ * @param objTimes array of object sizes
+ * @returns performance statistics (latency, throughput, object size)
+ */
+function computePerfStats(
+  opTimes: Array<number>,
+  tpTimes: Array<number> = [],
+  objTimes: Array<number> = []
+): {
+  latency: { [key: string]: string };
+  throughput: { [key: string]: string };
+  objectSize: { [key: string]: string };
+} {
+  const sort = (arr: Array<number>) => arr.sort((a, b) => a - b);
+  const average = (arr: Array<number>) =>
+    arr.reduce((a, b) => a + b) / arr.length;
+  const stats = (_times, _fixedPositions, _measurement) => {
+    if (_times.length === 0) {
+      return {};
+    }
+    _times = sort(_times);
+    const stats = {
+      average: `${average(_times).toFixed(_fixedPositions)} ${_measurement}`,
+      p50: `${_times[Math.floor(_times.length / 2)].toFixed(
+        _fixedPositions
+      )} ${_measurement}`,
+      p90: `${_times[Math.floor((_times.length - 1) * 0.9)].toFixed(
+        _fixedPositions
+      )} ${_measurement}`,
+    };
+    return stats;
+  };
+  return {
+    latency: stats(opTimes, 2, "ms"),
+    throughput:
+      tpTimes.length > 0 || opTimes.length === 0
+        ? stats(tpTimes, 5, "objects/ms")
+        : `${(
+            opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)
+          ).toFixed(5)} objects/ms`,
+    objectSize: stats(objTimes, 2, "bytes"),
+  };
+}
 
-exports.lambdaHandler(
-  {
-    requestType: "get_object_passthrough_ttfb",
-    bucket: "mp-test-bucket-8",
-  },
-  {},
-  console.log
-);
+// process.env.BOLT_URL =
+//   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-2";
+
+// exports.lambdaHandler(
+//   {
+//     numKeysStr: 20,
+//     requestType: "all",
+//     bucket: "mp-test-bucket-10",
+//   },
+//   {},
+//   console.log
+// );

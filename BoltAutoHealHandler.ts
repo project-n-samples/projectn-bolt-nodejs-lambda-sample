@@ -20,34 +20,32 @@ exports.lambdaHandler = async (event, context, callback) => {
       setTimeout(resolve, ms);
     });
   };
-  await (async () => {
-    const opsClient = new BoltS3OpsClient();
-    let isObjectHealed = false;
-    perf.start();
-    while (!isObjectHealed) {
-      try {
-        await opsClient.processEvent({
-          ...event,
-          requestType: RequestTypes.GetObject,
-          sdkType: SdkTypes.Bolt,
-        });
-        isObjectHealed = true;
-      } catch (ex) {
-        console.log("Waiting...");
-        await wait(WAIT_TIME_BETWEEN_RETRIES);
-        console.log("Re-trying Get Object...");
-      }
-    }
-    const results = perf.stop();
-    return new Promise((res, rej) => {
-      callback(undefined, {
-        auto_heal_time: `${(
-          results.time - WAIT_TIME_BETWEEN_RETRIES
-        ).toFixed(2)} ms`,
+  const opsClient = new BoltS3OpsClient();
+  let isObjectHealed = false;
+  perf.start();
+  while (!isObjectHealed) {
+    try {
+      await opsClient.processEvent({
+        ...event,
+        requestType: RequestTypes.GetObject,
+        sdkType: SdkTypes.Bolt,
       });
-      res("success");
+      isObjectHealed = true;
+    } catch (ex) {
+      console.log("Waiting...");
+      await wait(WAIT_TIME_BETWEEN_RETRIES);
+      console.log("Re-trying Get Object...");
+    }
+  }
+  const results = perf.stop();
+  return new Promise((res, rej) => {
+    callback(undefined, {
+      auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRIES).toFixed(
+        2
+      )} ms`,
     });
-  })();
+    res("success");
+  });
 };
 
 // process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";

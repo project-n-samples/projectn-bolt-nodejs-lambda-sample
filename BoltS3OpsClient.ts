@@ -49,6 +49,37 @@ interface IBoltS3OpsClient {
   processEvent: any;
 }
 
+export type ListObjectsV2Response = {
+  objects: string[];
+};
+
+export type GetObjectResponse = {
+  md5: string;
+  contentLength?: number;
+  isObjectCompressed?: boolean;
+};
+
+export type HeadObjectResponse = {
+  expiration: string;
+  lastModified: string;
+  contentLength: number;
+  contentEncoding: string;
+  eTag: string;
+  versionId: string;
+  storageClass: string;
+};
+
+export type ListBucketsResponse = { buckets: string[] };
+
+export type HeadBucketAlongWithRegionResponse = { statusCode: number; region: string };
+
+export type PutObjectResponse = {
+  eTag?: string;
+  expiration?: string;
+  versionId?: string;
+};
+
+export type DeleteObjectResponse = { statusCode?: number };
 /**
  * processEvent extracts the parameters (sdkType, requestType, bucket/key) from the event,
  * uses those parameters to send an Object/Bucket CRUD request to Bolt/S3 and returns back an appropriate response.
@@ -56,7 +87,18 @@ interface IBoltS3OpsClient {
 export class BoltS3OpsClient implements IBoltS3OpsClient {
   constructor() {}
 
-  async processEvent(event: LambdaEventType) {
+  async processEvent(
+    event: LambdaEventType
+  ): Promise<
+    | ListObjectsV2Response
+    | GetObjectResponse
+    | HeadObjectResponse
+    | ListBucketsResponse
+    | HeadBucketAlongWithRegionResponse
+    | PutObjectResponse
+    | DeleteObjectResponse
+    | Error
+  > {
     Object.keys(event).forEach((prop) => {
       if (["sdkType", "requestType"].includes(prop)) {
         event[prop] = event[prop].toUpperCase();
@@ -72,36 +114,34 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
 
     try {
       //Performs an S3 / Bolt operation based on the input 'requestType'
-      if (event.requestType === RequestTypes.ListObjectsV2) {
-        return this.listObjectsV2(client, event.bucket);
-      } else if (
-        [
-          RequestTypes.GetObject,
-          RequestTypes.GetObjectTTFB,
-          RequestTypes.GetObjectPassthrough,
-          RequestTypes.GetObjectPassthroughTTFB,
-        ].includes(event.requestType as RequestTypes)
-      ) {
-        return this.getObject(
-          client,
-          event.bucket,
-          event.key,
-          event.isForStats,
-          [
-            RequestTypes.GetObjectTTFB,
-            RequestTypes.GetObjectPassthroughTTFB,
-          ].includes(event.requestType as RequestTypes)
-        );
-      } else if (event.requestType === RequestTypes.HeadObject) {
-        return this.headObject(client, event.bucket, event.key);
-      } else if (event.requestType === RequestTypes.ListBuckets) {
-        return this.listBuckets(client);
-      } else if (event.requestType === RequestTypes.HeadBucket) {
-        return this.headBucketAlongWithRegion(client, event.bucket);
-      } else if (event.requestType === RequestTypes.PutObject) {
-        return this.putObject(client, event.bucket, event.key, event.value);
-      } else if (event.requestType === RequestTypes.DeleteObject) {
-        return this.deleteObject(client, event.bucket, event.key);
+
+      switch (event.requestType) {
+        case RequestTypes.ListObjectsV2:
+          return this.listObjectsV2(client, event.bucket);
+        case RequestTypes.GetObject:
+        case RequestTypes.GetObjectTTFB:
+        case RequestTypes.GetObjectPassthrough:
+        case RequestTypes.GetObjectPassthroughTTFB:
+          return this.getObject(
+            client,
+            event.bucket,
+            event.key,
+            event.isForStats,
+            [
+              RequestTypes.GetObjectTTFB,
+              RequestTypes.GetObjectPassthroughTTFB,
+            ].includes(event.requestType as RequestTypes)
+          );
+        case RequestTypes.ListBuckets:
+          return this.listBuckets(client);
+        case RequestTypes.HeadBucket:
+          return this.headBucketAlongWithRegion(client, event.bucket);
+        case RequestTypes.HeadObject:
+          return this.headObject(client, event.bucket, event.key);
+        case RequestTypes.PutObject:
+          return this.putObject(client, event.bucket, event.key, event.value);
+        case RequestTypes.DeleteObject:
+          return this.deleteObject(client, event.bucket, event.key);
       }
     } catch (ex) {
       console.error(ex);
@@ -115,7 +155,10 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * @param bucket
    * @returns list of first 1000 objects
    */
-  async listObjectsV2(client: S3Client, bucket: string) {
+  async listObjectsV2(
+    client: S3Client,
+    bucket: string
+  ): Promise<ListObjectsV2Response> {
     const command = new ListObjectsV2Command({ Bucket: bucket });
     const response = await client.send(command);
     const keys = (response["Contents"] || []).map((x) => x.Key);
@@ -174,7 +217,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     key: string,
     isForStats: boolean = false,
     timeToFirstByte: boolean = false
-  ) {
+  ): Promise<GetObjectResponse> {
     const command = new GetObjectCommand({ Bucket: bucket, Key: key });
     const response = await client.send(command);
     const body = response["Body"];
@@ -199,17 +242,21 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * @param key
    * @returns object metadata
    */
-  async headObject(client: S3Client, bucket: string, key: string) {
+  async headObject(
+    client: S3Client,
+    bucket: string,
+    key: string
+  ): Promise<HeadObjectResponse> {
     const command = new HeadObjectCommand({ Bucket: bucket, Key: key });
     const response = await client.send(command);
     return {
-      Expiration: response["Expiration"],
-      lastModified: response["LastModified"].toISOString(),
-      ContentLength: response["ContentLength"],
-      ContentEncoding: response["ContentEncoding"],
-      ETag: response["ETag"],
-      VersionId: response["VersionId"],
-      StorageClass: response["StorageClass"],
+      expiration: response.Expiration,
+      lastModified: response.LastModified.toISOString(),
+      contentLength: response.ContentLength,
+      contentEncoding: response.ContentEncoding,
+      eTag: response.ETag,
+      versionId: response.VersionId,
+      storageClass: response.StorageClass,
     };
   }
 
@@ -218,7 +265,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * @param client
    * @returns list of buckets
    */
-  async listBuckets(client: S3Client) {
+  async listBuckets(client: S3Client): Promise<ListBucketsResponse> {
     const command = new ListBucketsCommand({});
     const response = await client.send(command);
     const buckets = (response["Buckets"] || []).map((x) => x.Name);
@@ -231,7 +278,10 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * @param bucket
    * @returns status code and region if the bucket exists
    */
-  async headBucketAlongWithRegion(client: S3Client, bucket: string) {
+  async headBucketAlongWithRegion(
+    client: S3Client,
+    bucket: string
+  ): Promise<HeadBucketAlongWithRegionResponse> {
     const command = new GetBucketLocationCommand({ Bucket: bucket });
     const response = await client.send(command);
     const statusCode = response.$metadata && response.$metadata.httpStatusCode;
@@ -254,7 +304,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     bucket: string,
     key: string,
     value: string
-  ) {
+  ): Promise<PutObjectResponse> {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -262,9 +312,9 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     });
     const response = await client.send(command);
     return {
-      ETag: response["ETag"],
-      Expiration: response["Expiration"],
-      VersionId: response["VersionId"],
+      eTag: response.ETag,
+      expiration: response.Expiration,
+      versionId: response.VersionId,
     };
   }
 
@@ -275,7 +325,11 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    * @param key
    * @returns status code
    */
-  async deleteObject(client: S3Client, bucket: string, key: string) {
+  async deleteObject(
+    client: S3Client,
+    bucket: string,
+    key: string
+  ): Promise<DeleteObjectResponse> {
     const command = new DeleteObjectCommand({ Bucket: bucket, Key: key });
     const response = await client.send(command);
     const statusCode = response.$metadata && response.$metadata.httpStatusCode;
