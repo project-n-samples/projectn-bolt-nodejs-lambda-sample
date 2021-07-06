@@ -73,7 +73,7 @@ exports.lambdaHandler = async (event, context, callback) => {
               await opsClient.processEvent({
                 ...event,
                 requestType: RequestTypes.ListObjectsV2,
-                sdkType: SdkTypes.Bolt, // Here sdkType either S3 or Bolt works since both returns same keys in ideal case
+                sdkType: SdkTypes.S3, // Here sdkType either S3 or Bolt works since both returns same keys in ideal case
               })
             )["objects"] || []
           ).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
@@ -133,8 +133,8 @@ exports.lambdaHandler = async (event, context, callback) => {
     console.log(`Performance statistics of ${requestType} just got completed.`);
     return {
       // requestType,
-      ...s3PerfStats,
-      ...boltPerfStats,
+      s3PerfStats,
+      boltPerfStats,
     };
   };
 
@@ -213,12 +213,12 @@ function computePerfStats(
 //   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
 // process.env.AWS_REGION = "us-east-2";
 
-// exports.lambdaHandler(
-//   {
-//     numKeysStr: 20,
-//     requestType: "all",
-//     bucket: "mp-test-bucket-10",
-//   },
-//   {},
-//   console.log
-// );
+exports.lambdaHandler(
+  {
+    numKeysStr: 20,
+    requestType: "all",
+    bucket: "mp-test-bucket-10",
+  },
+  {},
+  console.log
+);

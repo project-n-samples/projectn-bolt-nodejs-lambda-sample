@@ -68,7 +68,7 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
                 BoltS3OpsClient_1.RequestTypes.All,
             ].includes(requestType)
                 ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT related performace tests
-                : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt })))["objects"] || []).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
+                : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.S3 })))["objects"] || []).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
         const runFor = (sdkType) => __awaiter(void 0, void 0, void 0, function* () {
             const times = [], throughputs = [], objectSizes = [];
             let compressedObjectsCount = 0, unCompressedObjectsCount = 0;
@@ -105,7 +105,11 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         const s3PerfStats = yield runFor(BoltS3OpsClient_1.SdkTypes.S3);
         const boltPerfStats = yield runFor(BoltS3OpsClient_1.SdkTypes.Bolt);
         console.log(`Performance statistics of ${requestType} just got completed.`);
-        return Object.assign(Object.assign({}, s3PerfStats), boltPerfStats);
+        return {
+            // requestType,
+            s3PerfStats,
+            boltPerfStats,
+        };
     });
     Object.keys(event).forEach((prop) => {
         if (["sdkType", "requestType"].includes(prop)) {
@@ -157,13 +161,9 @@ function computePerfStats(opTimes, tpTimes = [], objTimes = []) {
 // process.env.BOLT_URL =
 //   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
 // process.env.AWS_REGION = "us-east-2";
-// exports.lambdaHandler(
-//   {
-//     numKeysStr: 20,
-//     requestType: "all",
-//     bucket: "mp-test-bucket-10",
-//   },
-//   {},
-//   console.log
-// );
+exports.lambdaHandler({
+    numKeysStr: 20,
+    requestType: "all",
+    bucket: "mp-test-bucket-10",
+}, {}, console.log);
 //# sourceMappingURL=BoltS3PerfHandler.js.map
