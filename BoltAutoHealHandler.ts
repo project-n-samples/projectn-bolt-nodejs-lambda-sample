@@ -56,21 +56,22 @@ exports.lambdaHandler = async (event, context, callback) => {
   const results = perf.stop();
   return new Promise((res, rej) => {
     callback(undefined, {
-      auto_heal_time: `${(results.time - WAIT_TIME_BETWEEN_RETRIES).toFixed(
-        2
-      )} ms`,
+      auto_heal_time: `${(results.time > WAIT_TIME_BETWEEN_RETRIES
+        ? results.time - WAIT_TIME_BETWEEN_RETRIES
+        : results.time
+      ).toFixed(2)} ms`,
     });
     res("success");
   });
 };
 
-process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
-process.env.AWS_REGION = "us-east-1";
-exports.lambdaHandler(
-  {
-    bucket: "bolt-mp-autoheal-1",
-    key: "config",
-  },
-  {},
-  console.log
-);
+// process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     bucket: "bolt-mp-autoheal-1",
+//     key: "config",
+//   },
+//   {},
+//   console.log
+// );

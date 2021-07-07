@@ -1,6 +1,6 @@
 {
   "name": "projectn-bolt-typescript-lambda-sample",
-  "version": "1.0.0-beta.17",
+  "version": "1.0.0-beta.18",
   "description": "Sample AWS Lambda app in Node.js that utilizes Bolt TypeScript Client SDK",
   "main": "app.js",
   "files": [
