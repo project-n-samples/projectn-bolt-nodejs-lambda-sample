@@ -55,10 +55,18 @@ exports.lambdaHandler = async (event, context, callback) => {
   })();
 };
 
-// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co"
-// process.env.AWS_REGION = "us-east-2"
-// exports.lambdaHandler({
-//     "requestType": "head_bucket",
+// process.env.BOLT_URL =
+//   "	https://bolt.us-east-1.solaw2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-2";
+
+
+// exports.lambdaHandler(
+//   {
 //     "sdkType": "s3",
-//     "bucket": "mp-test-bucket-7"
-//   }, {}, console.log)
+//     "requestType": "get_object_ttfb",
+//     "bucket": "mp-test-bucket-9",
+//     "key": "package.json"
+//   },
+//   {},
+//   console.log
+// );

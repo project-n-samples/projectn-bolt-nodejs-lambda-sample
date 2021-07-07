@@ -50,9 +50,10 @@ const perf = require("execution-time")();
  *  */
 exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
     const getPerfStats = (requestType) => __awaiter(void 0, void 0, void 0, function* () {
-        const numberOfObjects = event.numKeysStr
-            ? parseInt(event.numKeysStr) <= 1000
-                ? parseInt(event.numKeysStr)
+        console.log({ requestType });
+        const numberOfObjects = event.maxKeys
+            ? parseInt(event.maxKeys) <= 1000
+                ? parseInt(event.maxKeys)
                 : 1000
             : 1000;
         const generateRandomValue = () => new Array(event.objLengthStr ? parseInt(event.objLengthStr) : 100)
@@ -113,6 +114,7 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
             event[prop] = event[prop].toUpperCase();
         }
     });
+    console.log({ event });
     const perfStats = event.requestType !== BoltS3OpsClient_1.RequestTypes.All
         ? yield getPerfStats(event.requestType)
         : {
@@ -153,13 +155,13 @@ function computePerfStats(opTimes, tpTimes = [], objSizes = []) {
             : `${(opTimes.length / sum(opTimes)).toFixed(5)} objects/ms` }, (objSizes.length > 0 ? { objectSize: stats(objSizes, 2, "bytes") } : {}));
 }
 // process.env.BOLT_URL =
-//   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-2";
+//   "	https://bolt.us-east-1.solaw2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-1";
 // exports.lambdaHandler(
 //   {
-//     numKeysStr: 20,
-//     requestType: "all",
-//     bucket: "mp-test-bucket-10",
+//     "requestType": "all",
+//     "bucket": "solaw-demo-east-1",
+//     "key": "config"
 //   },
 //   {},
 //   console.log

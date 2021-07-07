@@ -20,6 +20,7 @@ type LambdaEventType = {
   bucket?: string;
   key?: string;
   value?: string;
+  maxKeys?: number;
 
   isForStats?: boolean;
   TTFB?: boolean; // Time to first byte
@@ -71,7 +72,10 @@ export type HeadObjectResponse = {
 
 export type ListBucketsResponse = { buckets: string[] };
 
-export type HeadBucketAlongWithRegionResponse = { statusCode: number; region: string };
+export type HeadBucketAlongWithRegionResponse = {
+  statusCode: number;
+  region: string;
+};
 
 export type PutObjectResponse = {
   eTag?: string;
@@ -99,12 +103,12 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
     | DeleteObjectResponse
     | Error
   > {
+    console.log({ event });
     Object.keys(event).forEach((prop) => {
       if (["sdkType", "requestType"].includes(prop)) {
         event[prop] = event[prop].toUpperCase();
       }
     });
-    // console.log({ event }); // TODO: (MP) Delete for later
     /**
      * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
      * create an Bolt/S3 Client depending on the 'sdkType'
@@ -117,7 +121,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
 
       switch (event.requestType) {
         case RequestTypes.ListObjectsV2:
-          return this.listObjectsV2(client, event.bucket);
+          return this.listObjectsV2(client, event.bucket, event.maxKeys);
         case RequestTypes.GetObject:
         case RequestTypes.GetObjectTTFB:
         case RequestTypes.GetObjectPassthrough:
@@ -157,9 +161,13 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
    */
   async listObjectsV2(
     client: S3Client,
-    bucket: string
+    bucket: string,
+    maxKeys: number = 1000
   ): Promise<ListObjectsV2Response> {
-    const command = new ListObjectsV2Command({ Bucket: bucket });
+    const command = new ListObjectsV2Command({
+      Bucket: bucket,
+      MaxKeys: maxKeys,
+    });
     const response = await client.send(command);
     const keys = (response["Contents"] || []).map((x) => x.Key);
     return { objects: keys };
@@ -171,7 +179,12 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
   ): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       if (timeToFirstByte) {
-        resolve(stream.read(1));
+        // resolve(stream.read(1)); //TODO: (MP): .read() not working for S3 - Revisit later
+        const chunks = [];
+        stream.on("data", (chunk) => {
+          chunks.push(chunk);
+          resolve(Buffer.concat(chunks));
+        })
         stream.on("error", reject);
       } else {
         const chunks = [];

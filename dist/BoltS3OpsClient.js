@@ -42,12 +42,12 @@ class BoltS3OpsClient {
     constructor() { }
     processEvent(event) {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log({ event });
             Object.keys(event).forEach((prop) => {
                 if (["sdkType", "requestType"].includes(prop)) {
                     event[prop] = event[prop].toUpperCase();
                 }
             });
-            // console.log({ event }); // TODO: (MP) Delete for later
             /**
              * request is sent to S3 if 'sdkType' is not passed as a parameter in the event.
              * create an Bolt/S3 Client depending on the 'sdkType'
@@ -57,7 +57,7 @@ class BoltS3OpsClient {
                 //Performs an S3 / Bolt operation based on the input 'requestType'
                 switch (event.requestType) {
                     case RequestTypes.ListObjectsV2:
-                        return this.listObjectsV2(client, event.bucket);
+                        return this.listObjectsV2(client, event.bucket, event.maxKeys);
                     case RequestTypes.GetObject:
                     case RequestTypes.GetObjectTTFB:
                     case RequestTypes.GetObjectPassthrough:
@@ -90,9 +90,12 @@ class BoltS3OpsClient {
      * @param bucket
      * @returns list of first 1000 objects
      */
-    listObjectsV2(client, bucket) {
+    listObjectsV2(client, bucket, maxKeys = 1000) {
         return __awaiter(this, void 0, void 0, function* () {
-            const command = new client_s3_2.ListObjectsV2Command({ Bucket: bucket });
+            const command = new client_s3_2.ListObjectsV2Command({
+                Bucket: bucket,
+                MaxKeys: maxKeys,
+            });
             const response = yield client.send(command);
             const keys = (response["Contents"] || []).map((x) => x.Key);
             return { objects: keys };
@@ -102,7 +105,12 @@ class BoltS3OpsClient {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 if (timeToFirstByte) {
-                    resolve(stream.read(1));
+                    // resolve(stream.read(1)); //TODO: (MP): .read() not working for S3 - Revisit later
+                    const chunks = [];
+                    stream.on("data", (chunk) => {
+                        chunks.push(chunk);
+                        resolve(Buffer.concat(chunks));
+                    });
                     stream.on("error", reject);
                 }
                 else {
