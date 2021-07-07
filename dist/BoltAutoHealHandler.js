@@ -52,11 +52,11 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         res("success");
     });
 });
-// process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-1";
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
+// process.env.AWS_REGION = "us-east-2";
 // exports.lambdaHandler(
 //   {
-//     bucket: "bolt-mp-autoheal-1",
+//     bucket: "mp-test-bucket-10",
 //     key: "config",
 //   },
 //   {},

@@ -62,12 +62,10 @@ exports.lambdaHandler = async (event, context, callback) => {
     const keys =
       requestType === RequestTypes.ListObjectsV2
         ? new Array(10).fill(0).map((x, i) => "dummy key") // For ListObjectsV2, fetching objects process is only repeated for 10 times
-        : [
-            RequestTypes.PutObject,
-            RequestTypes.DeleteObject,
-            RequestTypes.All,
-          ].includes(requestType)
-        ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT related performace tests
+        : [RequestTypes.PutObject, RequestTypes.DeleteObject].includes(
+            requestType
+          )
+        ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT or DELETE related performace tests
         : (
             (
               await opsClient.processEvent({
@@ -78,6 +76,7 @@ exports.lambdaHandler = async (event, context, callback) => {
             )["objects"] || []
           ).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
 
+    // Run performance stats for given sdkType either S3 or Bolt
     const runFor = async (sdkType) => {
       const times = [],
         throughputs = [],
@@ -166,13 +165,13 @@ exports.lambdaHandler = async (event, context, callback) => {
 /**
  * @param opTimes array of latencies
  * @param tpTimes array of throughputs
- * @param objTimes array of object sizes
+ * @param objSizes array of object sizes
  * @returns performance statistics (latency, throughput, object size)
  */
 function computePerfStats(
   opTimes: Array<number>,
   tpTimes: Array<number> = [],
-  objTimes: Array<number> = []
+  objSizes: Array<number> = []
 ): {
   latency: { [key: string]: string };
   throughput: { [key: string]: string };
@@ -181,6 +180,7 @@ function computePerfStats(
   const sort = (arr: Array<number>) => arr.sort((a, b) => a - b);
   const average = (arr: Array<number>) =>
     arr.reduce((a, b) => a + b) / arr.length;
+  const sum = (arr: Array<number>) => arr.reduce((incr, x) => incr + x, 0);
   const stats = (_times, _fixedPositions, _measurement) => {
     if (_times.length === 0) {
       return {};
@@ -202,10 +202,8 @@ function computePerfStats(
     throughput:
       tpTimes.length > 0 || opTimes.length === 0
         ? stats(tpTimes, 5, "objects/ms")
-        : `${(
-            opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)
-          ).toFixed(5)} objects/ms`,
-    ...(objTimes.length > 0 ? { objectSize: stats(objTimes, 2, "bytes") } : {}),
+        : `${(opTimes.length / sum(opTimes)).toFixed(5)} objects/ms`,
+    ...(objSizes.length > 0 ? { objectSize: stats(objSizes, 2, "bytes") } : {}),
   };
 }
 
@@ -213,12 +211,12 @@ function computePerfStats(
 //   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
 // process.env.AWS_REGION = "us-east-2";
 
-exports.lambdaHandler(
-  {
-    numKeysStr: 20,
-    requestType: "all",
-    bucket: "mp-test-bucket-10",
-  },
-  {},
-  console.log
-);
+// exports.lambdaHandler(
+//   {
+//     numKeysStr: 20,
+//     requestType: "all",
+//     bucket: "mp-test-bucket-10",
+//   },
+//   {},
+//   console.log
+// );

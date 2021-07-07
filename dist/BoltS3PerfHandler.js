@@ -62,13 +62,10 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
         const keys = requestType === BoltS3OpsClient_1.RequestTypes.ListObjectsV2
             ? new Array(10).fill(0).map((x, i) => "dummy key") // For ListObjectsV2, fetching objects process is only repeated for 10 times
-            : [
-                BoltS3OpsClient_1.RequestTypes.PutObject,
-                BoltS3OpsClient_1.RequestTypes.DeleteObject,
-                BoltS3OpsClient_1.RequestTypes.All,
-            ].includes(requestType)
-                ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT related performace tests
+            : [BoltS3OpsClient_1.RequestTypes.PutObject, BoltS3OpsClient_1.RequestTypes.DeleteObject].includes(requestType)
+                ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT or DELETE related performace tests
                 : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.S3 })))["objects"] || []).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
+        // Run performance stats for given sdkType either S3 or Bolt
         const runFor = (sdkType) => __awaiter(void 0, void 0, void 0, function* () {
             const times = [], throughputs = [], objectSizes = [];
             let compressedObjectsCount = 0, unCompressedObjectsCount = 0;
@@ -132,12 +129,13 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
 /**
  * @param opTimes array of latencies
  * @param tpTimes array of throughputs
- * @param objTimes array of object sizes
+ * @param objSizes array of object sizes
  * @returns performance statistics (latency, throughput, object size)
  */
-function computePerfStats(opTimes, tpTimes = [], objTimes = []) {
+function computePerfStats(opTimes, tpTimes = [], objSizes = []) {
     const sort = (arr) => arr.sort((a, b) => a - b);
     const average = (arr) => arr.reduce((a, b) => a + b) / arr.length;
+    const sum = (arr) => arr.reduce((incr, x) => incr + x, 0);
     const stats = (_times, _fixedPositions, _measurement) => {
         if (_times.length === 0) {
             return {};
@@ -152,14 +150,18 @@ function computePerfStats(opTimes, tpTimes = [], objTimes = []) {
     };
     return Object.assign({ latency: stats(opTimes, 2, "ms"), throughput: tpTimes.length > 0 || opTimes.length === 0
             ? stats(tpTimes, 5, "objects/ms")
-            : `${(opTimes.length / opTimes.reduce((incr, x) => incr + x, 0)).toFixed(5)} objects/ms` }, (objtimes.length ? { objectSize: stats(objTimes, 2, "bytes") } : {}));
+            : `${(opTimes.length / sum(opTimes)).toFixed(5)} objects/ms` }, (objSizes.length > 0 ? { objectSize: stats(objSizes, 2, "bytes") } : {}));
 }
 // process.env.BOLT_URL =
 //   "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
 // process.env.AWS_REGION = "us-east-2";
-exports.lambdaHandler({
-    numKeysStr: 20,
-    requestType: "all",
-    bucket: "mp-test-bucket-10",
-}, {}, console.log);
+// exports.lambdaHandler(
+//   {
+//     numKeysStr: 20,
+//     requestType: "all",
+//     bucket: "mp-test-bucket-10",
+//   },
+//   {},
+//   console.log
+// );
 //# sourceMappingURL=BoltS3PerfHandler.js.map

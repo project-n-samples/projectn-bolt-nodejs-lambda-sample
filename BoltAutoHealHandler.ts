@@ -48,12 +48,12 @@ exports.lambdaHandler = async (event, context, callback) => {
   });
 };
 
-// process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
 
-// process.env.AWS_REGION = "us-east-1";
+// process.env.AWS_REGION = "us-east-2";
 // exports.lambdaHandler(
 //   {
-//     bucket: "bolt-mp-autoheal-1",
+//     bucket: "mp-test-bucket-10",
 //     key: "config",
 //   },
 //   {},
