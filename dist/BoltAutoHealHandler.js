@@ -41,7 +41,8 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
                     opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt })),
                     new Promise((res, rej) => {
                         setTimeout(() => {
-                            rej("GetObject not resolved... Auto resolving...");
+                            console.log("GetObject not resolved... Auto rejecting...");
+                            rej('Error');
                         }, 2000);
                     }),
                 ]);

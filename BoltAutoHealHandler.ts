@@ -35,7 +35,8 @@ exports.lambdaHandler = async (event, context, callback) => {
           }),
           new Promise((res, rej) => {
             setTimeout(() => {
-              rej("GetObject not resolved... Auto resolving...");
+              console.log("GetObject not resolved... Auto rejecting...")
+              rej('Error');
             }, 2000);
           }),
         ]);
