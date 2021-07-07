@@ -35,7 +35,22 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
     perf.start();
     while (!isObjectHealed) {
         try {
-            yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
+            // AutoHeal - Workaround for Bolt API Issue - This will be reverted back once API issue is addressed
+            yield (() => __awaiter(void 0, void 0, void 0, function* () {
+                return Promise.race([
+                    opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt })),
+                    new Promise((res, rej) => {
+                        setTimeout(() => {
+                            rej("GetObject not resolved... Auto resolving...");
+                        }, 2000);
+                    }),
+                ]);
+            }))();
+            // await opsClient.processEvent({
+            //   ...event,
+            //   requestType: RequestTypes.GetObject,
+            //   sdkType: SdkTypes.Bolt,
+            // });
             isObjectHealed = true;
         }
         catch (ex) {
@@ -52,14 +67,10 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         res("success");
     });
 });
-// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-2";
-// exports.lambdaHandler(
-//   {
-//     bucket: "mp-test-bucket-10",
-//     key: "config",
-//   },
-//   {},
-//   console.log
-// );
+process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
+process.env.AWS_REGION = "us-east-1";
+exports.lambdaHandler({
+    bucket: "bolt-mp-autoheal-1",
+    key: "config",
+}, {}, console.log);
 //# sourceMappingURL=BoltAutoHealHandler.js.map
