@@ -1,6 +1,6 @@
-import { BoltS3OpsClient, SdkTypes, RequestType, LambdaEvent } from "./BoltS3OpsClient";
+import { BoltS3OpsClient, LambdaEvent } from "./BoltS3OpsClient";
 
-exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
+export async function lambdaHandler(event: LambdaEvent, context, callback) {
   /**
    *lambda_handler is the handler function that is invoked by AWS Lambda to process an incoming event.
 
@@ -47,10 +47,12 @@ exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
   await (async () => {
     const opsClient = new BoltS3OpsClient();
     const response = await opsClient.processEvent(event);
-  
+
     return new Promise((res, rej) => {
-        callback(undefined, response);
-        res('success');
+      callback(undefined, response);
+      res("success");
     });
   })();
-};
+}
+
+exports.lambdaHandler = lambdaHandler;

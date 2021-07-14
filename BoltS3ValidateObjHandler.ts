@@ -1,4 +1,9 @@
-import { BoltS3OpsClient, SdkTypes, RequestType, LambdaEvent } from "./BoltS3OpsClient";
+import {
+  BoltS3OpsClient,
+  SdkTypes,
+  RequestType,
+  LambdaEvent,
+} from "./BoltS3OpsClient";
 
 /**
  * <summary>
@@ -14,7 +19,7 @@ import { BoltS3OpsClient, SdkTypes, RequestType, LambdaEvent } from "./BoltS3Ops
  * <param name="context">lambda context</param>
  * <returns>md5s of object retrieved from Bolt and S3.</returns>
  */
-exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
+export async function lambdaHandler(event: LambdaEvent, context, callback) {
   await (async () => {
     const opsClient = new BoltS3OpsClient();
     const boltGetObjectResponse = await opsClient.processEvent({
@@ -35,4 +40,6 @@ exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
       res("success");
     });
   })();
-};
+}
+
+exports.lambdaHandler = lambdaHandler;

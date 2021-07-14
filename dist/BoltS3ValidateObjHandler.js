@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.lambdaHandler = void 0;
 const BoltS3OpsClient_1 = require("./BoltS3OpsClient");
 /**
  * <summary>
@@ -24,18 +25,22 @@ const BoltS3OpsClient_1 = require("./BoltS3OpsClient");
  * <param name="context">lambda context</param>
  * <returns>md5s of object retrieved from Bolt and S3.</returns>
  */
-exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
-    yield (() => __awaiter(void 0, void 0, void 0, function* () {
-        const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
-        const boltGetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
-        const s3GetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.S3 }));
-        return new Promise((res, rej) => {
-            callback(undefined, {
-                "s3-md5": s3GetObjectResponse["md5"],
-                "bolt-md5": boltGetObjectResponse["md5"],
+function lambdaHandler(event, context, callback) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield (() => __awaiter(this, void 0, void 0, function* () {
+            const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
+            const boltGetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
+            const s3GetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.S3 }));
+            return new Promise((res, rej) => {
+                callback(undefined, {
+                    "s3-md5": s3GetObjectResponse["md5"],
+                    "bolt-md5": boltGetObjectResponse["md5"],
+                });
+                res("success");
             });
-            res("success");
-        });
-    }))();
-});
+        }))();
+    });
+}
+exports.lambdaHandler = lambdaHandler;
+exports.lambdaHandler = lambdaHandler;
 //# sourceMappingURL=BoltS3ValidateObjHandler.js.map

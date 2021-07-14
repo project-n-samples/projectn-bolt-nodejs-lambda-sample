@@ -1,13 +1,13 @@
 {
-  "name": "projectn-bolt-typescript-lambda-sample",
-  "version": "1.0.0-beta.22",
+  "name": "projectn-bolt-nodejs-lambda-sample",
+  "version": "1.0.0-beta.26",
   "description": "Sample AWS Lambda app in Node.js that utilizes Bolt TypeScript Client SDK",
-  "main": "app.js",
+  "main": "dist/index.js",
   "files": [
     "dist/"
   ],
   "scripts": {
-    "compile": "tsc && node dist/BoltS3OpsClientHandler.js",
+    "compile": "tsc && node dist/index.js",
     "dev": "./node_modules/nodemon/bin/nodemon.js -e ts  --exec \"npm run compile\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,7 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.18.0",
     "execution-time": "^1.4.1",
-    "projectn-bolt-aws-typescript-sdk": "^1.0.0-alpha.8"
+    "projectn-bolt-aws-typescript-sdk": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^15.12.4",

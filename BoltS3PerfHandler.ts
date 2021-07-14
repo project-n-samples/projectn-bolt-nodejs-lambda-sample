@@ -44,7 +44,7 @@ const perf = require("execution-time")();
  * <param name="context">lambda context</param>
  * <re>response from BoltS3Perf</r
  *  */
-exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
+export async function lambdaHandler(event: LambdaEvent, context, callback) {
   const getPerfStats = async (requestType: RequestType) => {
     const maxKeys = event.maxKeys
       ? event.maxKeys <= 1000
@@ -161,7 +161,7 @@ exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
     callback(undefined, perfStats);
     res("success");
   });
-};
+}
 
 /**
  * @param opTimes array of latencies
@@ -207,3 +207,5 @@ function computePerfStats(
     ...(objSizes.length > 0 ? { objectSize: stats(objSizes, 2, "bytes") } : {}),
   };
 }
+
+exports.lambdaHandler = lambdaHandler;

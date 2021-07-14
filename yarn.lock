@@ -1566,10 +1566,10 @@ pretty-hrtime@^1.0.3:
   resolved "https://registry.yarnpkg.com/pretty-hrtime/-/pretty-hrtime-1.0.3.tgz#b7e3ea42435a4c9b2759d99e0f201eb195802ee1"
   integrity sha1-t+PqQkNaTJsnWdmeDyAesZWALuE=
 
-projectn-bolt-aws-typescript-sdk@^1.0.0-alpha.8:
-  version "1.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/projectn-bolt-aws-typescript-sdk/-/projectn-bolt-aws-typescript-sdk-1.0.0-alpha.8.tgz#73519a9aa7d22220156295a13f85d1c58271e7e9"
-  integrity sha512-qs/MdO23T4SCIrXegK71g+GlRn+yyj9VhPY7ZSFintOAI/V8zoAu0w7sjZu2cSJ51rtUQMyNfKLlpnmrRgzcqg==
+projectn-bolt-aws-typescript-sdk@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/projectn-bolt-aws-typescript-sdk/-/projectn-bolt-aws-typescript-sdk-1.0.0.tgz#52da69b2e24a35177cdc952a03571d686e7795b8"
+  integrity sha512-aUPYsa/QByS597SJni5dE6oqE2MnLJFNqXxN9/p6vPFdzP62X2nQIwN4GTaMjwvMxeE9SLg7ULQ+C5KOgPmubA==
   dependencies:
     "@aws-sdk/client-s3" "^3.18.0"
     aws-sdk "^2.936.0"

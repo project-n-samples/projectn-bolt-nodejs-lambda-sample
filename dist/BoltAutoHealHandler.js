@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.lambdaHandler = void 0;
 const BoltS3OpsClient_1 = require("./BoltS3OpsClient");
 const perf = require("execution-time")();
 /**
@@ -23,35 +24,39 @@ const perf = require("execution-time")();
  * <param name="context">lambda context</param>
  * <returns>time taken to auto-heal</returns>
  */
-exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
-    const WAIT_TIME_BETWEEN_RETRIES = 2000; //ms
-    const wait = (ms) => {
-        return new Promise((resolve) => {
-            setTimeout(resolve, ms);
-        });
-    };
-    const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
-    let isObjectHealed = false;
-    perf.start();
-    while (!isObjectHealed) {
-        try {
-            yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
-            isObjectHealed = true;
+function lambdaHandler(event, context, callback) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const WAIT_TIME_BETWEEN_RETRIES = 2000; //ms
+        const wait = (ms) => {
+            return new Promise((resolve) => {
+                setTimeout(resolve, ms);
+            });
+        };
+        const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
+        let isObjectHealed = false;
+        perf.start();
+        while (!isObjectHealed) {
+            try {
+                yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
+                isObjectHealed = true;
+            }
+            catch (ex) {
+                console.log("Waiting...");
+                yield wait(WAIT_TIME_BETWEEN_RETRIES);
+                console.log("Re-trying Get Object...");
+            }
         }
-        catch (ex) {
-            console.log("Waiting...");
-            yield wait(WAIT_TIME_BETWEEN_RETRIES);
-            console.log("Re-trying Get Object...");
-        }
-    }
-    const results = perf.stop();
-    return new Promise((res, rej) => {
-        callback(undefined, {
-            auto_heal_time: `${(results.time > WAIT_TIME_BETWEEN_RETRIES
-                ? results.time - WAIT_TIME_BETWEEN_RETRIES
-                : results.time).toFixed(2)} ms`,
+        const results = perf.stop();
+        return new Promise((res, rej) => {
+            callback(undefined, {
+                auto_heal_time: `${(results.time > WAIT_TIME_BETWEEN_RETRIES
+                    ? results.time - WAIT_TIME_BETWEEN_RETRIES
+                    : results.time).toFixed(2)} ms`,
+            });
+            res("success");
         });
-        res("success");
     });
-});
+}
+exports.lambdaHandler = lambdaHandler;
+exports.lambdaHandler = lambdaHandler;
 //# sourceMappingURL=BoltAutoHealHandler.js.map
