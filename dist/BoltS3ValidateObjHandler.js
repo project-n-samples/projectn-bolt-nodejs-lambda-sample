@@ -27,8 +27,8 @@ const BoltS3OpsClient_1 = require("./BoltS3OpsClient");
 exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
     yield (() => __awaiter(void 0, void 0, void 0, function* () {
         const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
-        const boltGetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
-        const s3GetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.S3 }));
+        const boltGetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.Bolt }));
+        const s3GetObjectResponse = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.GetObject, sdkType: BoltS3OpsClient_1.SdkTypes.S3 }));
         return new Promise((res, rej) => {
             callback(undefined, {
                 "s3-md5": s3GetObjectResponse["md5"],

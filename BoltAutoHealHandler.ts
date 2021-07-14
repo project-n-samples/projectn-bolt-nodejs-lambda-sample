@@ -1,4 +1,4 @@
-import { BoltS3OpsClient, SdkTypes, RequestType } from "./BoltS3OpsClient";
+import { BoltS3OpsClient, SdkTypes, RequestType, LambdaEvent } from "./BoltS3OpsClient";
 const perf = require("execution-time")();
 
 /**
@@ -13,7 +13,7 @@ const perf = require("execution-time")();
  * <param name="context">lambda context</param>
  * <returns>time taken to auto-heal</returns>
  */
-exports.lambdaHandler = async (event, context, callback) => {
+exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
   const WAIT_TIME_BETWEEN_RETRIES = 2000; //ms
   const wait = (ms) => {
     return new Promise((resolve) => {

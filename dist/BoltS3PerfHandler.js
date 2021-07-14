@@ -28,7 +28,7 @@ const perf = require("execution-time")();
  * 2) bucket - buck
  * Following are examples of events, for various requests, that can be used to invoke the handler function.
  * a) Measure List objects performance of Bolt/S3.
- *    {"requestType": "list_objects_v2", "bucket": "<bucket>"}
+ *    {"requestType": "list_objects_v2", "bucket": "<bucket>", "maxKeys": "<maxKeys>"}
  * b) Measure Get object performance of Bolt / S3.
  *    {"requestType": "get_object", "bucket": "<bucket>"}
  * c) Measure Get object (first byte) performance of Bolt / S3.
@@ -50,22 +50,21 @@ const perf = require("execution-time")();
  *  */
 exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, void 0, function* () {
     const getPerfStats = (requestType) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log({ requestType });
-        const numberOfObjects = event.maxKeys
-            ? parseInt(event.maxKeys) <= 1000
-                ? parseInt(event.maxKeys)
+        const maxKeys = event.maxKeys
+            ? event.maxKeys <= 1000
+                ? event.maxKeys
                 : 1000
             : 1000;
-        const generateRandomValue = () => new Array(event.objLengthStr ? parseInt(event.objLengthStr) : 100)
+        const generateRandomValue = () => new Array(event.maxObjLength ? event.maxObjLength : 100)
             .fill(0)
             .map((x, i) => String.fromCharCode(Math.floor(Math.random() * (122 - 48)) + 48))
             .join("");
         const opsClient = new BoltS3OpsClient_1.BoltS3OpsClient();
-        const keys = requestType === BoltS3OpsClient_1.RequestTypes.ListObjectsV2
+        const keys = requestType === BoltS3OpsClient_1.RequestType.ListObjectsV2
             ? new Array(10).fill(0).map((x, i) => "dummy key") // For ListObjectsV2, fetching objects process is only repeated for 10 times
-            : [BoltS3OpsClient_1.RequestTypes.PutObject, BoltS3OpsClient_1.RequestTypes.DeleteObject].includes(requestType)
-                ? new Array(numberOfObjects).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT or DELETE related performace tests
-                : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestTypes.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.S3 })))["objects"] || []).slice(0, numberOfObjects); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
+            : [BoltS3OpsClient_1.RequestType.PutObject, BoltS3OpsClient_1.RequestType.DeleteObject].includes(requestType)
+                ? new Array(maxKeys).fill(0).map((x, i) => `bolt-s3-perf-${i}`) // Auto generating keys for PUT or DELETE related performace tests
+                : ((yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType: BoltS3OpsClient_1.RequestType.ListObjectsV2, sdkType: BoltS3OpsClient_1.SdkTypes.S3 })))["objects"] || []).slice(0, maxKeys); // Fetch keys from buckets (S3/Bolt) for GET related performace tests
         // Run performance stats for given sdkType either S3 or Bolt
         const runFor = (sdkType) => __awaiter(void 0, void 0, void 0, function* () {
             const times = [], throughputs = [], objectSizes = [];
@@ -75,14 +74,14 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
                 const response = yield opsClient.processEvent(Object.assign(Object.assign({}, event), { requestType, isForStats: true, sdkType: sdkType, key, value: generateRandomValue() }));
                 const perfTime = perf.stop().time;
                 times.push(perfTime);
-                if (requestType === BoltS3OpsClient_1.RequestTypes.ListObjectsV2) {
+                if (requestType === BoltS3OpsClient_1.RequestType.ListObjectsV2) {
                     throughputs.push(response.objects.length / perfTime);
                 }
                 else if ([
-                    BoltS3OpsClient_1.RequestTypes.GetObject,
-                    BoltS3OpsClient_1.RequestTypes.GetObjectTTFB,
-                    BoltS3OpsClient_1.RequestTypes.GetObjectPassthrough,
-                    BoltS3OpsClient_1.RequestTypes.GetObjectPassthroughTTFB,
+                    BoltS3OpsClient_1.RequestType.GetObject,
+                    BoltS3OpsClient_1.RequestType.GetObjectTTFB,
+                    BoltS3OpsClient_1.RequestType.GetObjectPassthrough,
+                    BoltS3OpsClient_1.RequestType.GetObjectPassthroughTTFB,
                 ].includes(requestType)) {
                     if (response.isObjectCompressed) {
                         compressedObjectsCount++;
@@ -115,13 +114,13 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
         }
     });
     console.log({ event });
-    const perfStats = event.requestType !== BoltS3OpsClient_1.RequestTypes.All
+    const perfStats = event.requestType !== BoltS3OpsClient_1.RequestType.All
         ? yield getPerfStats(event.requestType)
         : {
-            [BoltS3OpsClient_1.RequestTypes.PutObject]: yield getPerfStats(BoltS3OpsClient_1.RequestTypes.PutObject),
-            [BoltS3OpsClient_1.RequestTypes.DeleteObject]: yield getPerfStats(BoltS3OpsClient_1.RequestTypes.DeleteObject),
-            [BoltS3OpsClient_1.RequestTypes.ListObjectsV2]: yield getPerfStats(BoltS3OpsClient_1.RequestTypes.ListObjectsV2),
-            [BoltS3OpsClient_1.RequestTypes.GetObject]: yield getPerfStats(BoltS3OpsClient_1.RequestTypes.GetObject),
+            [BoltS3OpsClient_1.RequestType.PutObject]: yield getPerfStats(BoltS3OpsClient_1.RequestType.PutObject),
+            [BoltS3OpsClient_1.RequestType.DeleteObject]: yield getPerfStats(BoltS3OpsClient_1.RequestType.DeleteObject),
+            [BoltS3OpsClient_1.RequestType.ListObjectsV2]: yield getPerfStats(BoltS3OpsClient_1.RequestType.ListObjectsV2),
+            [BoltS3OpsClient_1.RequestType.GetObject]: yield getPerfStats(BoltS3OpsClient_1.RequestType.GetObject),
         };
     return new Promise((res, rej) => {
         callback(undefined, perfStats);
@@ -159,9 +158,10 @@ function computePerfStats(opTimes, tpTimes = [], objSizes = []) {
 // process.env.AWS_REGION = "us-east-1";
 // exports.lambdaHandler(
 //   {
-//     "requestType": "all",
+//     "requestType": "get_object",
 //     "bucket": "solaw-demo-east-1",
-//     "key": "config"
+//     "key": "config",
+//     "maxKeys": 100
 //   },
 //   {},
 //   console.log

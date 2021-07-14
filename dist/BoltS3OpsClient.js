@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BoltS3OpsClient = exports.RequestTypes = exports.SdkTypes = void 0;
+exports.BoltS3OpsClient = exports.RequestType = exports.SdkTypes = void 0;
 const projectn_bolt_aws_typescript_sdk_1 = require("projectn-bolt-aws-typescript-sdk");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const { createHmac, createHash } = require("crypto");
@@ -20,20 +20,20 @@ var SdkTypes;
     SdkTypes["Bolt"] = "BOLT";
     SdkTypes["S3"] = "S3";
 })(SdkTypes = exports.SdkTypes || (exports.SdkTypes = {}));
-var RequestTypes;
-(function (RequestTypes) {
-    RequestTypes["ListObjectsV2"] = "LIST_OBJECTS_V2";
-    RequestTypes["GetObject"] = "GET_OBJECT";
-    RequestTypes["GetObjectTTFB"] = "GET_OBJECT_TTFB";
-    RequestTypes["HeadObject"] = "HEAD_OBJECT";
-    RequestTypes["ListBuckets"] = "LIST_BUCKETS";
-    RequestTypes["HeadBucket"] = "HEAD_BUCKET";
-    RequestTypes["PutObject"] = "PUT_OBJECT";
-    RequestTypes["DeleteObject"] = "DELETE_OBJECT";
-    RequestTypes["GetObjectPassthrough"] = "GET_OBJECT_PASSTHROUGH";
-    RequestTypes["GetObjectPassthroughTTFB"] = "GET_OBJECT_PASSTHROUGH_TTFB";
-    RequestTypes["All"] = "ALL";
-})(RequestTypes = exports.RequestTypes || (exports.RequestTypes = {}));
+var RequestType;
+(function (RequestType) {
+    RequestType["ListObjectsV2"] = "LIST_OBJECTS_V2";
+    RequestType["GetObject"] = "GET_OBJECT";
+    RequestType["GetObjectTTFB"] = "GET_OBJECT_TTFB";
+    RequestType["HeadObject"] = "HEAD_OBJECT";
+    RequestType["ListBuckets"] = "LIST_BUCKETS";
+    RequestType["HeadBucket"] = "HEAD_BUCKET";
+    RequestType["PutObject"] = "PUT_OBJECT";
+    RequestType["DeleteObject"] = "DELETE_OBJECT";
+    RequestType["GetObjectPassthrough"] = "GET_OBJECT_PASSTHROUGH";
+    RequestType["GetObjectPassthroughTTFB"] = "GET_OBJECT_PASSTHROUGH_TTFB";
+    RequestType["All"] = "ALL";
+})(RequestType = exports.RequestType || (exports.RequestType = {}));
 /**
  * processEvent extracts the parameters (sdkType, requestType, bucket/key) from the event,
  * uses those parameters to send an Object/Bucket CRUD request to Bolt/S3 and returns back an appropriate response.
@@ -56,25 +56,25 @@ class BoltS3OpsClient {
             try {
                 //Performs an S3 / Bolt operation based on the input 'requestType'
                 switch (event.requestType) {
-                    case RequestTypes.ListObjectsV2:
+                    case RequestType.ListObjectsV2:
                         return this.listObjectsV2(client, event.bucket, event.maxKeys);
-                    case RequestTypes.GetObject:
-                    case RequestTypes.GetObjectTTFB:
-                    case RequestTypes.GetObjectPassthrough:
-                    case RequestTypes.GetObjectPassthroughTTFB:
+                    case RequestType.GetObject:
+                    case RequestType.GetObjectTTFB:
+                    case RequestType.GetObjectPassthrough:
+                    case RequestType.GetObjectPassthroughTTFB:
                         return this.getObject(client, event.bucket, event.key, event.isForStats, [
-                            RequestTypes.GetObjectTTFB,
-                            RequestTypes.GetObjectPassthroughTTFB,
+                            RequestType.GetObjectTTFB,
+                            RequestType.GetObjectPassthroughTTFB,
                         ].includes(event.requestType));
-                    case RequestTypes.ListBuckets:
+                    case RequestType.ListBuckets:
                         return this.listBuckets(client);
-                    case RequestTypes.HeadBucket:
+                    case RequestType.HeadBucket:
                         return this.headBucketAlongWithRegion(client, event.bucket);
-                    case RequestTypes.HeadObject:
+                    case RequestType.HeadObject:
                         return this.headObject(client, event.bucket, event.key);
-                    case RequestTypes.PutObject:
+                    case RequestType.PutObject:
                         return this.putObject(client, event.bucket, event.key, event.value);
-                    case RequestTypes.DeleteObject:
+                    case RequestType.DeleteObject:
                         return this.deleteObject(client, event.bucket, event.key);
                 }
             }
@@ -166,7 +166,7 @@ class BoltS3OpsClient {
                 : yield this.streamToString(body, timeToFirstByte);
             const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
             const additional = isForStats
-                ? { contentLength: response["ContentLength"], isObjectCompressed }
+                ? { contentLength: response.ContentLength, isObjectCompressed }
                 : {};
             return Object.assign({ md5 }, additional);
         });

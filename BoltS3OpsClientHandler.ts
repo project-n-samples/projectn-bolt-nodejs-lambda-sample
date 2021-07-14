@@ -1,6 +1,6 @@
-import { BoltS3OpsClient, SdkTypes, RequestTypes } from "./BoltS3OpsClient";
+import { BoltS3OpsClient, SdkTypes, RequestType, LambdaEvent } from "./BoltS3OpsClient";
 
-exports.lambdaHandler = async (event, context, callback) => {
+exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
   /**
    *lambda_handler is the handler function that is invoked by AWS Lambda to process an incoming event.
 
@@ -66,6 +66,32 @@ exports.lambdaHandler = async (event, context, callback) => {
 //     "requestType": "get_object_ttfb",
 //     "bucket": "mp-test-bucket-9",
 //     "key": "package.json"
+//   },
+//   {},
+//   console.log
+// );
+
+
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn-bolt-2.us-east-2.bolt.projectn.co/";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     sdkType: "bolt",
+//     requestType: "head_bucket",
+//     bucket: "bolt-test-bucket-555555555",
+//   },
+//   {},
+//   console.log
+// );
+
+
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co/";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     requestType: "head_bucket",
+//     sdkType: "bolt",
+//     bucket: "mp-test-bucket-144444",
 //   },
 //   {},
 //   console.log

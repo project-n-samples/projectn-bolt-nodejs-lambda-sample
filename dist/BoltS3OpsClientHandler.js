@@ -76,4 +76,26 @@ exports.lambdaHandler = (event, context, callback) => __awaiter(void 0, void 0, 
 //   {},
 //   console.log
 // );
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn-bolt-2.us-east-2.bolt.projectn.co/";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     sdkType: "bolt",
+//     requestType: "head_bucket",
+//     bucket: "bolt-test-bucket-555555555",
+//   },
+//   {},
+//   console.log
+// );
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co/";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     requestType: "head_bucket",
+//     sdkType: "bolt",
+//     bucket: "mp-test-bucket-144444",
+//   },
+//   {},
+//   console.log
+// );
 //# sourceMappingURL=BoltS3OpsClientHandler.js.map

@@ -14,14 +14,15 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 
-type LambdaEventType = {
+export type LambdaEvent = {
   sdkType: string;
-  requestType: string;
+  requestType: RequestType;
   bucket?: string;
   key?: string;
   value?: string;
-  maxKeys?: number;
 
+  maxKeys?: number; // Max number of keys (objects) to fetch
+  maxObjLength?: number; // Max length of alphanumeric random value to create
   isForStats?: boolean;
   TTFB?: boolean; // Time to first byte
 };
@@ -31,7 +32,7 @@ export enum SdkTypes {
   S3 = "S3",
 }
 
-export enum RequestTypes {
+export enum RequestType {
   ListObjectsV2 = "LIST_OBJECTS_V2",
   GetObject = "GET_OBJECT",
   GetObjectTTFB = "GET_OBJECT_TTFB", // This is only for Perf
@@ -92,7 +93,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
   constructor() {}
 
   async processEvent(
-    event: LambdaEventType
+    event: LambdaEvent
   ): Promise<
     | ListObjectsV2Response
     | GetObjectResponse
@@ -120,31 +121,31 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
       //Performs an S3 / Bolt operation based on the input 'requestType'
 
       switch (event.requestType) {
-        case RequestTypes.ListObjectsV2:
+        case RequestType.ListObjectsV2:
           return this.listObjectsV2(client, event.bucket, event.maxKeys);
-        case RequestTypes.GetObject:
-        case RequestTypes.GetObjectTTFB:
-        case RequestTypes.GetObjectPassthrough:
-        case RequestTypes.GetObjectPassthroughTTFB:
+        case RequestType.GetObject:
+        case RequestType.GetObjectTTFB:
+        case RequestType.GetObjectPassthrough:
+        case RequestType.GetObjectPassthroughTTFB:
           return this.getObject(
             client,
             event.bucket,
             event.key,
             event.isForStats,
             [
-              RequestTypes.GetObjectTTFB,
-              RequestTypes.GetObjectPassthroughTTFB,
-            ].includes(event.requestType as RequestTypes)
+              RequestType.GetObjectTTFB,
+              RequestType.GetObjectPassthroughTTFB,
+            ].includes(event.requestType as RequestType)
           );
-        case RequestTypes.ListBuckets:
+        case RequestType.ListBuckets:
           return this.listBuckets(client);
-        case RequestTypes.HeadBucket:
+        case RequestType.HeadBucket:
           return this.headBucketAlongWithRegion(client, event.bucket);
-        case RequestTypes.HeadObject:
+        case RequestType.HeadObject:
           return this.headObject(client, event.bucket, event.key);
-        case RequestTypes.PutObject:
+        case RequestType.PutObject:
           return this.putObject(client, event.bucket, event.key, event.value);
-        case RequestTypes.DeleteObject:
+        case RequestType.DeleteObject:
           return this.deleteObject(client, event.bucket, event.key);
       }
     } catch (ex) {
@@ -184,7 +185,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
         stream.on("data", (chunk) => {
           chunks.push(chunk);
           resolve(Buffer.concat(chunks));
-        })
+        });
         stream.on("error", reject);
       } else {
         const chunks = [];
@@ -242,7 +243,7 @@ export class BoltS3OpsClient implements IBoltS3OpsClient {
       : await this.streamToString(body as Readable, timeToFirstByte);
     const md5 = createHash("md5").update(data).digest("hex").toUpperCase();
     const additional = isForStats
-      ? { contentLength: response["ContentLength"], isObjectCompressed }
+      ? { contentLength: response.ContentLength, isObjectCompressed }
       : {};
     return { md5, ...additional };
   }
