@@ -49,37 +49,3 @@ exports.lambdaHandler = async (event: LambdaEvent, context, callback) => {
     res("success");
   });
 };
-
-// process.env.BOLT_URL = "https://bolt.us-east-1.solaw2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-1";
-// exports.lambdaHandler(
-//   {
-//     bucket: "bolt-mp-autoheal-1",
-//     key: "config",
-//   },
-//   {},
-//   console.log
-// );
-
-
-// process.env.BOLT_URL = "https://bolt.us-east-2.projectn-bolt-2.us-east-2.bolt.projectn.co/";
-// process.env.AWS_REGION = "us-east-1";
-// exports.lambdaHandler(
-//   {
-//     bucket: "bolt-test-bucket-5",
-//     key: "test.txt",
-//   },
-//   {},
-//   console.log
-// );
-
-// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co/";
-// process.env.AWS_REGION = "us-east-1";
-// exports.lambdaHandler(
-//   {
-//     bucket: "mp-test-bucket-14",
-//     key: "package.json",
-//   },
-//   {},
-//   console.log
-// );

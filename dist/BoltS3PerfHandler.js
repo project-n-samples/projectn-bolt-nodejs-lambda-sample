@@ -153,17 +153,4 @@ function computePerfStats(opTimes, tpTimes = [], objSizes = []) {
             ? stats(tpTimes, 5, "objects/ms")
             : `${(opTimes.length / sum(opTimes)).toFixed(5)} objects/ms` }, (objSizes.length > 0 ? { objectSize: stats(objSizes, 2, "bytes") } : {}));
 }
-// process.env.BOLT_URL =
-//   "	https://bolt.us-east-1.solaw2.bolt.projectn.co";
-// process.env.AWS_REGION = "us-east-1";
-// exports.lambdaHandler(
-//   {
-//     "requestType": "get_object",
-//     "bucket": "solaw-demo-east-1",
-//     "key": "config",
-//     "maxKeys": 100
-//   },
-//   {},
-//   console.log
-// );
 //# sourceMappingURL=BoltS3PerfHandler.js.map
