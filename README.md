@@ -1,6 +1,6 @@
-# AWS Lambda Function in TypeScript for Bolt
+# AWS Lambda Function in Node.js for Bolt
 
-Sample AWS Lambda Function in TypeScript that utilizes [TypeScript SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-aws-typescript)
+Sample AWS Lambda Function in Node.js that utilizes [TypeScript SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-aws-typescript)
 
 ### Requirements
 
@@ -37,13 +37,24 @@ aws lambda create-function \
 
 ### Usage
 
-The Sample AWS Lambda Function in TypeScript illustrates the usage and various operations, via separate handlers,
+The Sample AWS Lambda Function in Node.js illustrates the usage and various operations, via separate handlers,
 that can be performed using [TypeScript SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-aws-typescript).
 The deployed AWS lambda function can be tested from the AWS Management Console by creating a test event and
 specifying its inputs in JSON format.
 
 Please ensure that `Bolt` is deployed before testing the sample AWS lambda function. If you haven't deployed `Bolt`,
 follow the instructions given [here](https://xyz.projectn.co/installation-guide#estimate-savings) to deploy `Bolt`.
+
+
+Here is the [GitLab public repo of Projec N Bolt Node.js Lambda Sample App](https://gitlab.com/projectn-oss/projectn-bolt-typescript-lambda-sample)
+
+And the same repo is avialable in NPM as well
+
+## Install the Projec N Bolt Node.js Lambda Sample App from NPM
+
+```shell
+npm i projectn-bolt-nodejs-lambda-sample
+```
 
 #### Testing Bolt or S3 Operations
 
