@@ -1,4 +1,4 @@
-import { BoltS3OpsClient, SdkTypes, RequestTypes } from "./BoltS3OpsClient";
+import { BoltS3OpsClient, SdkTypes, RequestType } from "./BoltS3OpsClient";
 const perf = require("execution-time")();
 
 /**
@@ -14,7 +14,7 @@ const perf = require("execution-time")();
  * <returns>time taken to auto-heal</returns>
  */
 exports.lambdaHandler = async (event, context, callback) => {
-  const WAIT_TIME_BETWEEN_RETRIES = 400; //ms
+  const WAIT_TIME_BETWEEN_RETRIES = 2000; //ms
   const wait = (ms) => {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
@@ -25,27 +25,11 @@ exports.lambdaHandler = async (event, context, callback) => {
   perf.start();
   while (!isObjectHealed) {
     try {
-      // AutoHeal - Workaround for Bolt API Issue - This will be reverted back once API issue is addressed
-      await (async () => {
-        return Promise.race([
-          opsClient.processEvent({
-            ...event,
-            requestType: RequestTypes.GetObject,
-            sdkType: SdkTypes.Bolt,
-          }),
-          new Promise((res, rej) => {
-            setTimeout(() => {
-              console.log("GetObject not resolved... Auto rejecting...")
-              rej('Error');
-            }, 2000);
-          }),
-        ]);
-      })();
-      // await opsClient.processEvent({
-      //   ...event,
-      //   requestType: RequestTypes.GetObject,
-      //   sdkType: SdkTypes.Bolt,
-      // });
+      await opsClient.processEvent({
+        ...event,
+        requestType: RequestType.GetObject,
+        sdkType: SdkTypes.Bolt,
+      });
 
       isObjectHealed = true;
     } catch (ex) {
@@ -72,6 +56,29 @@ exports.lambdaHandler = async (event, context, callback) => {
 //   {
 //     bucket: "bolt-mp-autoheal-1",
 //     key: "config",
+//   },
+//   {},
+//   console.log
+// );
+
+
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn-bolt-2.us-east-2.bolt.projectn.co/";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     bucket: "bolt-test-bucket-5",
+//     key: "test.txt",
+//   },
+//   {},
+//   console.log
+// );
+
+// process.env.BOLT_URL = "https://bolt.us-east-2.projectn.us-east-2.bolt.projectn.co/";
+// process.env.AWS_REGION = "us-east-1";
+// exports.lambdaHandler(
+//   {
+//     bucket: "mp-test-bucket-14",
+//     key: "package.json",
 //   },
 //   {},
 //   console.log
