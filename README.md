@@ -20,24 +20,24 @@ Sample AWS Lambda Function in Node.js that utilizes [TypeScript SDK for Bolt](ht
     ```shell
     npm i projectn-bolt-nodejs-lambda-sample
     ```
-* Create `typescript-sdk-lambda` directory, and pick one of the above three options.
+* Create `bolt-typescript-sdk-nodejs-lambda` directory, and pick one of the above three options.
 
-* create deployment package
+* Create deployment package
 ```bash
-cd typescript-sdk-lambda
+cd bolt-typescript-sdk-nodejs-lambda
 
-zip -r typescript-sdk-lambda-demo.zip .
+zip -r bolt-typescript-sdk-nodejs-lambda-demo.zip .
 ```
 
 ### Deploy
 
-* Deploy the function to AWS Lambda by uploading the deployment package (typescript-sdk-lambda-demo.zip)
+* Deploy the function to AWS Lambda by uploading the deployment package (bolt-typescript-sdk-nodejs-lambda-demo.zip)
 
 ```bash
 aws lambda create-function \
     --function-name <function-name> \
-    --runtime node14.x \
-    --zip-file fileb://typescript-sdk-lambda-demo.zip \
+    --runtime nodejs14.x \
+    --zip-file fileb://bolt-typescript-sdk-nodejs-lambda-demo.zip \
     --handler dist/BoltS3OpsClientHandler.lambdaHandler \
     --role <function-execution-role-ARN> \
     --environment "Variables={BOLT_URL=<Bolt-Service-Url>}" \
