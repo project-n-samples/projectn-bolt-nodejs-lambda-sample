@@ -7,18 +7,22 @@ Sample AWS Lambda Function in Node.js that utilizes [TypeScript SDK for Bolt](ht
 - Node.js 14.x or higher
 - [TypeScript SDK for Bolt](https://gitlab.com/projectn-oss/projectn-bolt-aws-typescript)
 
-### Build From Source
+### Three ways to build a Node.js AWS Lambda app to consume the Bolt SDK
 
-* Create `typescript-sdk-lambda` directory.
+1. Install Bolt SDK NPM package directly into your existing Node.js project
+    ```shell
+    npm i projectn-bolt-aws-typescript-sdk 
+    ```
+    
+2. Clone the [Projec N Bolt Node.js Lambda sample app](https://gitlab.com/projectn-oss/projectn-bolt-nodejs-lambda-sample) repository into your local directory
 
- ## Install Bolt TypeScript SDK NPM package
-
-```shell
-npm i projectn-bolt-aws-typescript-sdk
-```
+3. Install Projec N Bolt Node.js Lambda sample app NPM package (which is built on top of the Bolt SDK) directly into your existing Node.js project
+    ```shell
+    npm i projectn-bolt-nodejs-lambda-sample
+    ```
+* Create `typescript-sdk-lambda` directory, and pick one of the above three options.
 
 * create deployment package
-
 ```bash
 cd typescript-sdk-lambda
 
@@ -50,16 +54,6 @@ specifying its inputs in JSON format.
 
 Please ensure that `Bolt` is deployed before testing the sample AWS lambda function. If you haven't deployed `Bolt`,
 follow the instructions given [here](https://xyz.projectn.co/installation-guide#estimate-savings) to deploy `Bolt`.
-
-Here is the [GitLab public repo of Projec N Bolt Node.js Lambda Sample App](https://gitlab.com/projectn-oss/projectn-bolt-nodejs-lambda-sample)
-
-And the same repo is avialable in NPM as well
-
-## Install Bolt Node.js Lambda Sample NPM package
-
-```shell
-npm i projectn-bolt-nodejs-lambda-sample
-```
 
 #### Testing Bolt or S3 Operations
 
